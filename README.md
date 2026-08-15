@@ -58,6 +58,7 @@ npm test
 npm run lint
 npm run build
 npm run verify:evidence
+npm run smoke:public
 ```
 
 ## Evaluation không thu dữ liệu cá nhân
@@ -65,7 +66,7 @@ npm run verify:evidence
 - 60 câu giao dịch synthetic do dự án tự soạn, nhãn được khóa trước khi gọi Gemini; 30 prompt TTS chỉ được dùng khi dịch vụ TTS khả dụng.
 - 30 audio FLEURS tiếng Việt công khai (CC-BY-4.0): 15 clip rõ và 15 biến thể nhiễu xác định ở 20 dB SNR để đo khả năng từ chối ngoài phạm vi.
 - Runner gọi đúng API ứng dụng, gồm Firebase auth, quota, Zod và Gemini; không dùng prompt đánh giá riêng.
-- `npm run verify:evidence` kiểm tra coverage, provenance, artifact public và các trường không được công bố trước demo/nộp bài.
+- `npm run verify:evidence` + `npm run smoke:public` kiểm tra coverage, provenance, artifact public và các trường không được công bố trước demo/nộp bài.
 - Không gọi metric text/negative-control là accuracy giọng người dùng thật và không gộp mẫu giao dịch với mẫu âm tính thành một con số gây hiểu nhầm.
 
 Chi tiết và lệnh chạy: [`evaluation/README.md`](evaluation/README.md).
@@ -91,4 +92,4 @@ Bản demo công khai dùng Vercel Hobby, không yêu cầu Google Cloud Billing
 - **Insight có căn cứ:** code tính evidence 7 ngày; Gemini chỉ diễn giải aggregate, không nhận raw transaction, UID, audio hoặc transcript.
 - **Nguồn dữ liệu:** text benchmark là project-authored synthetic. Voice benchmark tách riêng, chỉ dùng synthetic/public có manifest và license. Không diễn giải metric text như độ chính xác voice người thật.
 
-Xem [kiến trúc AI/ML](docs/architecture-ai.md), [phương pháp evaluation](evaluation/README.md), [audit AI/ML mới nhất](docs/daily/2026-08-14-status.md) và [kịch bản demo 40 giây](docs/submission-demo-script.md).
+Xem [kiến trúc AI/ML](docs/architecture-ai.md), [phương pháp evaluation](evaluation/README.md), [audit AI/ML mới nhất](docs/daily/2026-08-19-status.md) và [kịch bản demo 40 giây](docs/submission-demo-script.md).
