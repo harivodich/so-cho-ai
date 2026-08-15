@@ -1,5 +1,6 @@
 "use client";
 
+import { UiIcon, type IconName } from "@/components/ui-icon";
 import { formatVietnameseDate } from "@/lib/date";
 import { formatVnd } from "@/lib/money";
 import type { ConfirmedTransaction, TransactionType } from "@/types/transaction";
@@ -18,21 +19,28 @@ const labels: Record<TransactionType, string> = {
   expense: "Chi phí",
 };
 
+const icons: Record<TransactionType, IconName> = {
+  sale: "sale",
+  purchase: "purchase",
+  expense: "expense",
+};
+
 export function TransactionList({ filter, onDelete, onEdit, onFilterChange, transactions }: Props) {
   const visibleTransactions = filter === "all" ? transactions : transactions.filter((item) => item.type === filter);
 
   return (
     <section className="ledger" aria-labelledby="ledger-title">
-      <div className="section-heading">
+      <div className="section-heading ledger-heading">
         <div>
-          <p className="eyebrow">Sổ giao dịch</p>
-          <h2 id="ledger-title">Các giao dịch đã xác nhận</h2>
+          <h2 id="ledger-title">Sổ giao dịch</h2>
+          <p className="section-description">Chỉ hiện các giao dịch bạn đã xác nhận lưu.</p>
         </div>
       </div>
 
       <div className="filter-row" aria-label="Lọc giao dịch">
         {(["all", "sale", "purchase", "expense"] as const).map((value) => (
           <button
+            aria-pressed={filter === value}
             className={filter === value ? "filter-button selected" : "filter-button"}
             key={value}
             type="button"
@@ -45,15 +53,16 @@ export function TransactionList({ filter, onDelete, onEdit, onFilterChange, tran
 
       {visibleTransactions.length === 0 ? (
         <div className="empty-state">
-          <p>Chưa có giao dịch phù hợp.</p>
-          <span>Mỗi giao dịch chỉ xuất hiện tại đây sau khi bạn xác nhận lưu.</span>
+          <span className="empty-state-icon"><UiIcon name="book" size={24} /></span>
+          <p>Chưa có giao dịch phù hợp</p>
+          <span>Giao dịch sẽ xuất hiện ở đây sau khi bạn xác nhận lưu.</span>
         </div>
       ) : (
         <ul className="transaction-list">
           {visibleTransactions.map((transaction) => (
             <li key={transaction.id}>
-              <div className={transaction.type === "sale" ? "transaction-marker income" : "transaction-marker expense"}>
-                {transaction.type === "sale" ? "+" : "−"}
+              <div className={`transaction-marker ${transaction.type}`}>
+                <UiIcon name={icons[transaction.type]} size={19} />
               </div>
               <div className="transaction-main">
                 <strong>{transaction.itemName ?? labels[transaction.type]}</strong>
@@ -61,9 +70,9 @@ export function TransactionList({ filter, onDelete, onEdit, onFilterChange, tran
               </div>
               <div className="transaction-amount">
                 <strong>{formatVnd(transaction.amount)}</strong>
-                <div>
-                  <button type="button" onClick={() => onEdit(transaction)}>Sửa</button>
-                  <button type="button" onClick={() => onDelete(transaction)}>Xóa</button>
+                <div className="action-chips">
+                  <button type="button" onClick={() => onEdit(transaction)}><UiIcon name="pencil" size={14} /> Sửa</button>
+                  <button className="delete-btn" type="button" onClick={() => onDelete(transaction)}><UiIcon name="trash" size={14} /> Xóa</button>
                 </div>
               </div>
             </li>

@@ -1,0 +1,57 @@
+{
+    "version":  "2026-08-13",
+    "privacy":  {
+                    "containsPersonalData":  false,
+                    "containsRealFinancialTransactions":  false,
+                    "policy":  "Only project-authored synthetic text or public material with documented licensing may be used."
+                },
+    "datasets":  [
+                     {
+                         "id":  "synthetic-text-v1",
+                         "path":  "datasets/synthetic-text-v1.jsonl",
+                         "kind":  "synthetic-text",
+                         "license":  "project-authored",
+                         "caseCount":  60,
+                         "purpose":  "Structured extraction contract evaluation; labels are fixed before model calls.",
+                         "limitations":  "Text-only synthetic samples do not represent live market speech."
+                     },
+                     {
+                         "id":  "synthetic-tts-v1",
+                         "path":  "manifests/synthetic-tts.jsonl",
+                         "kind":  "synthetic-audio",
+                         "license":  "project-authored prompts; generated audio is not committed",
+                         "caseCount":  30,
+                         "purpose":  "Transaction extraction evaluation when valid Vietnamese TTS audio exists.",
+                         "limitations":  "TTS speech is not representative of real users; no TTS report is published while the service is unavailable."
+                     },
+                     {
+                         "id":  "google-fleurs-vi-vn-validation",
+                         "path":  "manifests/fleurs-vi-negative.jsonl",
+                         "kind":  "public-audio-negative-control",
+                         "license":  "CC-BY-4.0",
+                         "caseCount":  30,
+                         "source":  "sources/google-fleurs-vi-vn.json",
+                         "purpose":  "Measure rejection of unrelated public Vietnamese speech through the same product API.",
+                         "limitations":  "Negative-control results do not measure market-transaction extraction accuracy."
+                     },
+                     {
+                         "id":  "common-voice-vi-negative-v1",
+                         "path":  "manifests/common-voice-negative.jsonl",
+                         "kind":  "optional-public-audio-negative-control",
+                         "license":  "CC0-1.0",
+                         "caseCount":  0,
+                         "purpose":  "Optional alternate public negative-control source.",
+                         "limitations":  "Not used in the published benchmark because its official download flow requires operator sign-in and acceptance of terms."
+                     },
+                     {
+                         "id":  "google-fleurs-vi-vn-clear-noisy-negative-v1",
+                         "path":  "manifests/fleurs-vi-negative-clear-noisy.jsonl",
+                         "kind":  "public-audio-negative-control",
+                         "license":  "CC-BY-4.0",
+                         "caseCount":  30,
+                         "source":  "sources/google-fleurs-vi-vn.json",
+                         "purpose":  "Paired rejection check: 15 original clear clips and 15 deterministic 20 dB SNR noisy variants through the same product API.",
+                         "limitations":  "Negative-control results do not measure market-transaction extraction accuracy; noisy variants are synthetic transformations, not field recordings."
+                     }
+                 ]
+}

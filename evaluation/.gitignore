@@ -1,0 +1,8 @@
+# Audio and source archives obtained locally for evaluation are not versioned.
+inputs/
+generated-audio/
+
+# Per-run outputs may contain model responses and should not be committed.
+results/*.jsonl
+results/*-report.json
+results/*-report.md

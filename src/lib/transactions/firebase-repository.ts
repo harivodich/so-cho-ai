@@ -6,7 +6,7 @@ import {
   getDocs,
   setDoc,
   writeBatch,
-} from "firebase/firestore";
+} from "firebase/firestore/lite";
 
 import { getFirebaseClient } from "@/lib/firebase/client";
 import type { ConfirmedTransaction } from "@/types/transaction";

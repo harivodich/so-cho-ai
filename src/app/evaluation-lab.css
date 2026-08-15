@@ -1,0 +1,181 @@
+.evaluation-lab {
+  margin: 26px 0 4px;
+  padding: clamp(20px, 4vw, 28px);
+  border: 1px solid var(--blue-line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: 0 7px 21px rgba(57, 88, 124, 0.045);
+}
+
+.evaluation-lab-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.evaluation-lab h2 { margin: 0; }
+
+.evaluation-lab-header p,
+.evaluation-details p,
+.evaluation-unavailable span,
+.evaluation-loading {
+  margin: 6px 0 0;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.evaluation-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border: 1px solid var(--green-line);
+  border-radius: 999px;
+  background: var(--green-soft);
+  color: var(--green-dark);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.evaluation-summary,
+.evaluation-fields {
+  display: grid;
+  gap: 0;
+  margin-top: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.evaluation-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.evaluation-fields { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+.evaluation-summary > div,
+.evaluation-fields > div {
+  display: grid;
+  align-content: start;
+  min-width: 0;
+  min-height: 108px;
+  padding: 15px;
+  border-right: 1px solid var(--line);
+}
+
+.evaluation-summary > div:last-child,
+.evaluation-fields > div:last-child { border-right: 0; }
+.evaluation-summary > div:first-child { background: var(--blue-soft); }
+
+.evaluation-summary span,
+.evaluation-fields span {
+  color: var(--ink-soft);
+  font-size: 0.73rem;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.evaluation-summary strong,
+.evaluation-fields strong {
+  margin-top: 12px;
+  color: var(--ink);
+  font-size: clamp(1.13rem, 3.5vw, 1.42rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.evaluation-summary small,
+.evaluation-fields small {
+  margin-top: 5px;
+  color: var(--ink-faint);
+  font-size: 0.69rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.evaluation-details {
+  margin-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.evaluation-details summary {
+  min-height: 44px;
+  padding: 13px 0;
+  color: var(--blue);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.evaluation-details dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 20px;
+  margin: 0;
+}
+
+.evaluation-details dl div { border-top: 1px solid var(--line); padding-top: 9px; }
+.evaluation-details dt { color: var(--ink-faint); font-size: 0.69rem; font-weight: 750; }
+.evaluation-details dd { margin: 4px 0 0; color: var(--ink); font-size: 0.78rem; font-weight: 700; word-break: break-word; }
+.evaluation-details p { max-width: 68ch; margin-top: 15px; }
+
+.evaluation-unavailable {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 14px;
+  border: 1px solid var(--blue-line);
+  border-radius: var(--radius-sm);
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+.evaluation-unavailable strong,
+.evaluation-unavailable span { display: block; }
+.evaluation-unavailable strong { color: var(--ink); font-size: 0.82rem; }
+.evaluation-unavailable span { margin-top: 3px; }
+.evaluation-unavailable code { color: var(--ink); font-size: 0.74rem; }
+
+@media (max-width: 650px) {
+  .evaluation-summary { grid-template-columns: 1fr; }
+  .evaluation-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .evaluation-summary > div,
+  .evaluation-fields > div { min-height: 96px; border-right: 0; border-bottom: 1px solid var(--line); }
+  .evaluation-summary > div:last-child,
+  .evaluation-fields > div:nth-last-child(-n + 2) { border-bottom: 0; }
+  .evaluation-fields > div:nth-child(odd) { border-right: 1px solid var(--line); }
+  .evaluation-details dl { grid-template-columns: 1fr; gap: 9px; }
+}
+
+.evaluation-errors,
+.evaluation-examples {
+  margin-top: 24px;
+  padding-top: 23px;
+  border-top: 1px solid var(--line);
+}
+
+.evaluation-errors h3,
+.evaluation-examples h3 { margin: 0; font-size: 1rem; letter-spacing: -0.025em; }
+.evaluation-errors p,
+.evaluation-examples > div > p { margin: 5px 0 0; color: var(--ink-soft); font-size: 0.78rem; line-height: 1.45; }
+.evaluation-errors ol { display: grid; gap: 10px; margin: 16px 0 0; padding: 0; list-style: none; }
+.evaluation-errors li { display: grid; grid-template-columns: minmax(108px, 0.72fr) minmax(0, 1.6fr) 24px; align-items: center; gap: 11px; color: var(--ink-soft); font-size: 0.78rem; font-weight: 750; }
+.evaluation-errors li > div { height: 9px; overflow: hidden; border-radius: 4px; background: var(--surface-soft); }
+.evaluation-errors li i { display: block; min-width: 7px; height: 100%; border-radius: inherit; background: var(--amber); }
+.evaluation-errors li b { color: var(--ink); font-size: 0.8rem; text-align: right; }
+.evaluation-no-errors { padding: 14px 0 0; color: var(--ink-faint) !important; }
+.evaluation-example-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+.evaluation-example { min-width: 0; padding: 15px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-soft); }
+.evaluation-example.is-correct { border-color: var(--green-line); background: var(--green-soft); }
+.evaluation-example.is-incorrect { border-color: var(--red-line); background: var(--red-soft); }
+.evaluation-example h4 { margin: 0; color: var(--ink); font-size: 0.82rem; letter-spacing: -0.015em; }
+.evaluation-example-input { min-height: 42px; margin: 9px 0; color: var(--ink); font-size: 0.78rem; font-weight: 700; line-height: 1.45; }
+.evaluation-example dl { display: grid; gap: 8px; margin: 0; }
+.evaluation-example dl div { padding-top: 8px; border-top: 1px solid rgba(23, 37, 29, 0.12); }
+.evaluation-example dt { color: var(--ink-faint); font-size: 0.65rem; font-weight: 800; }
+.evaluation-example dd { margin: 3px 0 0; color: var(--ink-soft); font-size: 0.68rem; line-height: 1.4; word-break: break-word; }
+.evaluation-example-note { margin: 10px 0 0; color: var(--ink-soft); font-size: 0.7rem; line-height: 1.42; }
+
+@media (max-width: 720px) { .evaluation-example-grid { grid-template-columns: 1fr; } }
+@media (max-width: 460px) { .evaluation-errors li { grid-template-columns: 92px minmax(0, 1fr) 20px; gap: 8px; font-size: 0.72rem; } }

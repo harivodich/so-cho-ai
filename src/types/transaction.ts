@@ -8,6 +8,13 @@ export type InputMethod = (typeof inputMethods)[number];
 
 const nullableTrimmedString = z.string().trim().min(1).nullable();
 const nullablePositiveNumber = z.number().finite().positive().nullable();
+export const dataQualityCheckSchema = z.object({
+  field: z.enum(["amount", "occurredAt", "type", "transactionCount"]),
+  value: z.string(),
+  reason: z.string().min(1),
+  action: z.string().min(1),
+});
+export type DataQualityCheck = z.infer<typeof dataQualityCheckSchema>;
 
 export const transactionDraftSchema = z.object({
   type: z.enum(transactionTypes).nullable(),
@@ -22,6 +29,7 @@ export const transactionDraftSchema = z.object({
   fieldsNeedingReview: z.array(z.string()),
   missingFields: z.array(z.string()),
   warnings: z.array(z.string()),
+  qualityChecks: z.array(dataQualityCheckSchema).default([]),
 });
 
 export type TransactionDraft = z.infer<typeof transactionDraftSchema>;
@@ -82,5 +90,6 @@ export function createManualDraft(input: ManualTransactionInput): TransactionDra
     fieldsNeedingReview: [],
     missingFields: [],
     warnings,
+    qualityChecks: [],
   };
 }

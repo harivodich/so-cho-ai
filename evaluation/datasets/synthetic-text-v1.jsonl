@@ -1,0 +1,60 @@
+{"id":"text-001","source":"synthetic","license":"project-authored","input":"Bán hai ký xoài, mỗi ký bốn mươi nghìn, tổng tám mươi nghìn.","expected":{"type":"sale","amount":80000,"quantity":2,"unitPrice":40000}}
+{"id":"text-002","source":"synthetic","license":"project-authored","input":"Nhập mười ký cam hết ba trăm năm mươi nghìn.","expected":{"type":"purchase","amount":350000,"quantity":10,"unitPrice":null}}
+{"id":"text-003","source":"synthetic","license":"project-authored","input":"Trả tiền giữ xe mười nghìn.","expected":{"type":"expense","amount":10000,"quantity":null,"unitPrice":null}}
+{"id":"text-004","source":"synthetic","license":"project-authored","input":"Bán ba chục trái chuối được một trăm hai mươi ngàn.","expected":{"type":"sale","amount":120000,"quantity":30,"unitPrice":null}}
+{"id":"text-005","source":"synthetic","license":"project-authored","input":"Nhập năm thùng dâu, một thùng một trăm tám mươi nghìn, tổng chín trăm nghìn.","expected":{"type":"purchase","amount":900000,"quantity":5,"unitPrice":180000}}
+{"id":"text-006","source":"synthetic","license":"project-authored","input":"Bán rau muống năm mươi nghìn.","expected":{"type":"sale","amount":50000,"quantity":null,"unitPrice":null}}
+{"id":"text-007","source":"synthetic","license":"project-authored","input":"Chi tiền bao bì hai mươi lăm nghìn.","expected":{"type":"expense","amount":25000,"quantity":null,"unitPrice":null}}
+{"id":"text-008","source":"synthetic","license":"project-authored","input":"Bán một ký nho giá chín mươi lăm nghìn.","expected":{"type":"sale","amount":95000,"quantity":1,"unitPrice":95000}}
+{"id":"text-009","source":"synthetic","license":"project-authored","input":"Nhập hai mươi ký khoai, mười tám nghìn một ký, tổng ba trăm sáu mươi nghìn.","expected":{"type":"purchase","amount":360000,"quantity":20,"unitPrice":18000}}
+{"id":"text-010","source":"synthetic","license":"project-authored","input":"Chi bảy mươi nghìn tiền điện.","expected":{"type":"expense","amount":70000,"quantity":null,"unitPrice":null}}
+{"id":"text-011","source":"synthetic","license":"project-authored","input":"Bán bốn hộp dâu, mỗi hộp sáu mươi lăm nghìn, được hai trăm sáu mươi nghìn.","expected":{"type":"sale","amount":260000,"quantity":4,"unitPrice":65000}}
+{"id":"text-012","source":"synthetic","license":"project-authored","input":"Nhập táo một triệu hai trăm nghìn.","expected":{"type":"purchase","amount":1200000,"quantity":null,"unitPrice":null}}
+{"id":"text-013","source":"synthetic","license":"project-authored","input":"Bán sáu ký bưởi, tổng ba trăm nghìn.","expected":{"type":"sale","amount":300000,"quantity":6,"unitPrice":null}}
+{"id":"text-014","source":"synthetic","license":"project-authored","input":"Mua nước đá hết ba mươi ngàn.","expected":{"type":"expense","amount":30000,"quantity":null,"unitPrice":null}}
+{"id":"text-015","source":"synthetic","license":"project-authored","input":"Nhập mười hai bó rau, mỗi bó tám nghìn, tổng chín mươi sáu nghìn.","expected":{"type":"purchase","amount":96000,"quantity":12,"unitPrice":8000}}
+{"id":"text-016","source":"synthetic","license":"project-authored","input":"Bán hai thùng thanh long, mỗi thùng bốn trăm năm mươi nghìn.","expected":{"type":"sale","amount":900000,"quantity":2,"unitPrice":450000}}
+{"id":"text-017","source":"synthetic","license":"project-authored","input":"Chi một trăm hai mươi nghìn tiền vận chuyển.","expected":{"type":"expense","amount":120000,"quantity":null,"unitPrice":null}}
+{"id":"text-018","source":"synthetic","license":"project-authored","input":"Bán mười lăm ký dưa leo, hai mươi nghìn một ký, tổng ba trăm nghìn.","expected":{"type":"sale","amount":300000,"quantity":15,"unitPrice":20000}}
+{"id":"text-019","source":"synthetic","license":"project-authored","input":"Nhập bảy sọt chôm chôm, hết hai triệu một trăm nghìn.","expected":{"type":"purchase","amount":2100000,"quantity":7,"unitPrice":null}}
+{"id":"text-020","source":"synthetic","license":"project-authored","input":"Bán năm ký cà chua, chưa nhớ tổng tiền.","expected":{"type":"sale","amount":null,"quantity":5,"unitPrice":null}}
+{"id":"text-021","source":"synthetic","license":"project-authored","input":"Bán hai ký ổi 35k một ký, thành 70k.","expected":{"type":"sale","amount":70000,"quantity":2,"unitPrice":35000}}
+{"id":"text-022","source":"synthetic","license":"project-authored","input":"Nhập 3kg hành 45 ngàn một ký, tổng 135 ngàn.","expected":{"type":"purchase","amount":135000,"quantity":3,"unitPrice":45000}}
+{"id":"text-023","source":"synthetic","license":"project-authored","input":"Chi 15k tiền túi nilon.","expected":{"type":"expense","amount":15000,"quantity":null,"unitPrice":null}}
+{"id":"text-024","source":"synthetic","license":"project-authored","input":"Bán một chục trứng giá 32 nghìn.","expected":{"type":"sale","amount":32000,"quantity":10,"unitPrice":null}}
+{"id":"text-025","source":"synthetic","license":"project-authored","input":"Nhập 24 chai nước, giá 6 nghìn một chai, hết 144 nghìn.","expected":{"type":"purchase","amount":144000,"quantity":24,"unitPrice":6000}}
+{"id":"text-026","source":"synthetic","license":"project-authored","input":"Bán một rổ mận 160 nghìn.","expected":{"type":"sale","amount":160000,"quantity":1,"unitPrice":160000}}
+{"id":"text-027","source":"synthetic","license":"project-authored","input":"Chi phí bốc hàng 90 ngàn.","expected":{"type":"expense","amount":90000,"quantity":null,"unitPrice":null}}
+{"id":"text-028","source":"synthetic","license":"project-authored","input":"Nhập bốn chục bắp cải, mỗi cái 12 nghìn, tổng 480 nghìn.","expected":{"type":"purchase","amount":480000,"quantity":40,"unitPrice":12000}}
+{"id":"text-029","source":"synthetic","license":"project-authored","input":"Bán ba bó rau thơm được 18 nghìn.","expected":{"type":"sale","amount":18000,"quantity":3,"unitPrice":null}}
+{"id":"text-030","source":"synthetic","license":"project-authored","input":"Chi 250 nghìn tiền thuê xe chở hàng.","expected":{"type":"expense","amount":250000,"quantity":null,"unitPrice":null}}
+{"id":"text-031","source":"synthetic","license":"project-authored","input":"Bán 8kg sầu riêng, 95k một ký, tổng 760k.","expected":{"type":"sale","amount":760000,"quantity":8,"unitPrice":95000}}
+{"id":"text-032","source":"synthetic","license":"project-authored","input":"Nhập hai trăm quả chanh, giá 2 nghìn một quả.","expected":{"type":"purchase","amount":400000,"quantity":200,"unitPrice":2000}}
+{"id":"text-033","source":"synthetic","license":"project-authored","input":"Bán một ký măng cụt 75 nghìn.","expected":{"type":"sale","amount":75000,"quantity":1,"unitPrice":75000}}
+{"id":"text-034","source":"synthetic","license":"project-authored","input":"Trả 55 nghìn tiền đá lạnh.","expected":{"type":"expense","amount":55000,"quantity":null,"unitPrice":null}}
+{"id":"text-035","source":"synthetic","license":"project-authored","input":"Nhập sáu bao khoai, mỗi bao 230 nghìn, hết một triệu ba trăm tám mươi nghìn.","expected":{"type":"purchase","amount":1380000,"quantity":6,"unitPrice":230000}}
+{"id":"text-036","source":"synthetic","license":"project-authored","input":"Bán mười trái dừa, mỗi trái 14 nghìn, tổng 140 nghìn.","expected":{"type":"sale","amount":140000,"quantity":10,"unitPrice":14000}}
+{"id":"text-037","source":"synthetic","license":"project-authored","input":"Chi 40 nghìn tiền gửi hàng.","expected":{"type":"expense","amount":40000,"quantity":null,"unitPrice":null}}
+{"id":"text-038","source":"synthetic","license":"project-authored","input":"Nhập 50kg bí đỏ, 11k một ký, tổng 550k.","expected":{"type":"purchase","amount":550000,"quantity":50,"unitPrice":11000}}
+{"id":"text-039","source":"synthetic","license":"project-authored","input":"Bán hai hộp nấm, mỗi hộp 48 nghìn.","expected":{"type":"sale","amount":96000,"quantity":2,"unitPrice":48000}}
+{"id":"text-040","source":"synthetic","license":"project-authored","input":"Chi 100 nghìn tiền rác chợ.","expected":{"type":"expense","amount":100000,"quantity":null,"unitPrice":null}}
+{"id":"text-041","source":"synthetic","license":"project-authored","input":"Bán dưa hấu hai ký.","expected":{"type":"sale","amount":null,"quantity":2,"unitPrice":null}}
+{"id":"text-042","source":"synthetic","license":"project-authored","input":"Nhập rau cải, chưa tính tiền.","expected":{"type":"purchase","amount":null,"quantity":null,"unitPrice":null}}
+{"id":"text-043","source":"synthetic","license":"project-authored","input":"Chi tiền điện.","expected":{"type":"expense","amount":null,"quantity":null,"unitPrice":null}}
+{"id":"text-044","source":"synthetic","license":"project-authored","input":"Hôm qua có bán 120 nghìn tiền bắp.","expected":{"type":"sale","amount":120000,"quantity":null,"unitPrice":null}}
+{"id":"text-045","source":"synthetic","license":"project-authored","input":"Mua thêm hàng năm trăm nghìn.","expected":{"type":"purchase","amount":500000,"quantity":null,"unitPrice":null}}
+{"id":"text-046","source":"synthetic","license":"project-authored","input":"Bán hai cân cà rốt, 18 nghìn một cân, thu 36 nghìn.","expected":{"type":"sale","amount":36000,"quantity":2,"unitPrice":18000}}
+{"id":"text-047","source":"synthetic","license":"project-authored","input":"Nhập một chục bắp, giá 70 nghìn.","expected":{"type":"purchase","amount":70000,"quantity":10,"unitPrice":null}}
+{"id":"text-048","source":"synthetic","license":"project-authored","input":"Bán bảy ký dưa lưới mỗi ký 52 nghìn, tổng 364 nghìn.","expected":{"type":"sale","amount":364000,"quantity":7,"unitPrice":52000}}
+{"id":"text-049","source":"synthetic","license":"project-authored","input":"Chi 25 ngàn tiền in hóa đơn.","expected":{"type":"expense","amount":25000,"quantity":null,"unitPrice":null}}
+{"id":"text-050","source":"synthetic","license":"project-authored","input":"Nhập bốn hộp sữa, mỗi hộp 180 nghìn.","expected":{"type":"purchase","amount":720000,"quantity":4,"unitPrice":180000}}
+{"id":"text-051","source":"synthetic","license":"project-authored","input":"Chào buổi sáng, hôm nay trời đẹp quá.","expected":null}
+{"id":"text-052","source":"synthetic","license":"project-authored","input":"Nhớ gọi điện cho mẹ lúc sáu giờ.","expected":null}
+{"id":"text-053","source":"synthetic","license":"project-authored","input":"Ngày mai đóng cửa sớm nhé.","expected":null}
+{"id":"text-054","source":"synthetic","license":"project-authored","input":"Bán hai ký xoài tám mươi nghìn, rồi chi mười nghìn giữ xe.","expected":{"type":"sale","amount":80000,"quantity":2,"unitPrice":null}}
+{"id":"text-055","source":"synthetic","license":"project-authored","input":"Nhập năm ký táo một trăm nghìn, sau đó bán hai ký cam sáu mươi nghìn.","expected":{"type":"purchase","amount":100000,"quantity":5,"unitPrice":null}}
+{"id":"text-056","source":"synthetic","license":"project-authored","input":"Tôi muốn biết doanh thu hôm nay.","expected":null}
+{"id":"text-057","source":"synthetic","license":"project-authored","input":"Cảm ơn khách đã mua hàng.","expected":null}
+{"id":"text-058","source":"synthetic","license":"project-authored","input":"Bán một ký ổi 45k, tổng 60k.","expected":{"type":"sale","amount":60000,"quantity":1,"unitPrice":45000}}
+{"id":"text-059","source":"synthetic","license":"project-authored","input":"Nhập ba bao gạo mỗi bao 510 nghìn, tổng một triệu năm trăm ba mươi nghìn.","expected":{"type":"purchase","amount":1530000,"quantity":3,"unitPrice":510000}}
+{"id":"text-060","source":"synthetic","license":"project-authored","input":"Chi phí thuê sạp một triệu rưỡi.","expected":{"type":"expense","amount":1500000,"quantity":null,"unitPrice":null}}

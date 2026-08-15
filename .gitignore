@@ -5,4 +5,12 @@ coverage/
 .env.local
 *.log
 .calm/
+.chrome-cdp/
+.chrome-check/
+.ui-qa/
 !.env.example
+evaluation/generated-audio/
+evaluation/results/*.jsonl
+evaluation/results/*.json
+evaluation/manifests/common-voice-negative.jsonl
+.vercel/

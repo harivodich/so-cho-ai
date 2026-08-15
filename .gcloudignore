@@ -1,0 +1,20 @@
+# Keep source deployments reproducible and prevent local credentials, caches,
+# evaluation inputs, and browser artifacts from reaching Cloud Build.
+.gcloudignore
+.git
+.gitignore
+.env
+.env.*
+node_modules/
+.next/
+coverage/
+logs/
+.calm/
+.chrome-cdp/
+.chrome-check/
+.ui-qa/
+evaluation/inputs/
+evaluation/generated-audio/
+evaluation/results/
+npm-debug.log*
+evaluation/

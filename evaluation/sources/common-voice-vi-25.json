@@ -1,0 +1,11 @@
+{
+  "dataset": "Common Voice Scripted Speech 25.0 - Vietnamese",
+  "publisher": "Mozilla Data Collective",
+  "locale": "vi",
+  "license": "CC0-1.0",
+  "format": "TSV, MP3",
+  "sourceUrl": "https://commonvoice.mozilla.org/en/datasets",
+  "checkedAt": "2026-08-12",
+  "purpose": "Chọn tối đa 10 câu không liên quan giao dịch để đo tỷ lệ từ chối sai; không dùng để tuyên bố độ chính xác giao dịch.",
+  "repositoryPolicy": "Không commit audio, client_id, tuổi, giới tính, accent hoặc metadata người nói."
+}

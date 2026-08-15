@@ -1,0 +1,129 @@
+{
+  "model": "gemini-2.5-flash",
+  "promptVersion": "text-extraction-v2",
+  "completedAt": "2026-08-13T03:12:13.068Z",
+  "cases": 60,
+  "transactionCases": 55,
+  "negativeCases": 5,
+  "fields": {
+    "type": {
+      "correct": 52,
+      "total": 55,
+      "accuracy": 94.55
+    },
+    "amount": {
+      "correct": 52,
+      "total": 55,
+      "accuracy": 94.55
+    },
+    "quantity": {
+      "correct": 52,
+      "total": 55,
+      "accuracy": 94.55
+    },
+    "unitPrice": {
+      "correct": 54,
+      "total": 55,
+      "accuracy": 98.18
+    }
+  },
+  "wholeTransaction": {
+    "correct": 46,
+    "total": 55,
+    "accuracy": 83.64
+  },
+  "nonTransactionRejection": {
+    "correct": 5,
+    "total": 5,
+    "accuracy": 100
+  },
+  "invalidJson": {
+    "count": 0,
+    "total": 60,
+    "rate": 0
+  },
+  "requiresHumanReview": {
+    "count": 35,
+    "total": 55,
+    "rate": 63.64
+  },
+  "errorGroups": {
+    "field:amount": 3,
+    "field:quantity": 3,
+    "field:type": 3,
+    "field:unitPrice": 1
+  },
+  "examples": {
+    "correct": {
+      "id": "text-001",
+      "input": "Bán hai ký xoài, mỗi ký bốn mươi nghìn, tổng tám mươi nghìn.",
+      "expected": {
+        "type": "sale",
+        "amount": 80000,
+        "quantity": 2,
+        "unitPrice": 40000
+      },
+      "actual": {
+        "type": "sale",
+        "quantity": 2,
+        "unitPrice": 40000,
+        "amount": 80000,
+        "fieldsNeedingReview": [],
+        "missingFields": [],
+        "warnings": []
+      },
+      "note": "Bốn trường đo đều khớp nhãn đã khóa trước khi gọi model."
+    },
+    "incorrect": {
+      "id": "text-014",
+      "input": "Mua nước đá hết ba mươi ngàn.",
+      "expected": {
+        "type": "expense",
+        "amount": 30000,
+        "quantity": null,
+        "unitPrice": null
+      },
+      "actual": {
+        "type": "purchase",
+        "quantity": null,
+        "unitPrice": null,
+        "amount": 30000,
+        "fieldsNeedingReview": [
+          "quantity",
+          "unitPrice"
+        ],
+        "missingFields": [
+          "quantity",
+          "unitPrice"
+        ],
+        "warnings": []
+      },
+      "note": "Model lệch ít nhất một trường; người dùng vẫn phải xác nhận trước khi lưu."
+    },
+    "validationDetected": {
+      "id": "text-058",
+      "input": "Bán một ký ổi 45k, tổng 60k.",
+      "expected": {
+        "type": "sale",
+        "amount": 60000,
+        "quantity": 1,
+        "unitPrice": 45000
+      },
+      "actual": {
+        "type": "sale",
+        "quantity": 1,
+        "unitPrice": 45000,
+        "amount": 60000,
+        "fieldsNeedingReview": [
+          "unitPrice",
+          "amount"
+        ],
+        "missingFields": [],
+        "warnings": [
+          "The calculated amount (quantity * unitPrice) does not match the provided amount."
+        ]
+      },
+      "note": "Quantity × unit price không khớp amount; Data Quality Guard sẽ yêu cầu kiểm tra, không tự sửa."
+    }
+  }
+}

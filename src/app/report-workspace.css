@@ -1,0 +1,130 @@
+.report-mode-switch {
+  flex-wrap: wrap;
+}
+
+.report-mode-switch button {
+  min-height: 40px;
+  padding-inline: 13px;
+}
+
+.report-period-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.report-period-fields .report-period-input {
+  min-width: 0;
+  margin: 0;
+}
+
+.report-filter-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.report-filter-grid label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  color: var(--ink-soft);
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+.report-filter-grid select {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 34px 8px 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.86rem;
+}
+
+.report-reset-button {
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.report-reset-button:not(:disabled):hover {
+  border-color: var(--green);
+  color: var(--green-strong);
+}
+
+.report-reset-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.report-filter-note {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 10px !important;
+  color: var(--green-strong) !important;
+  font-weight: 720;
+}
+
+.monthly-kpi-grid > div:nth-child(3) {
+  border-bottom-left-radius: 0;
+}
+
+.monthly-kpi-grid > div:nth-child(5) {
+  border-bottom-left-radius: var(--radius-sm);
+}
+
+@media (max-width: 720px) {
+  .report-filter-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .report-reset-button {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 560px) {
+  .report-mode-switch {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .report-period-fields,
+  .report-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .report-period-input,
+  .report-period-input input {
+    width: 100%;
+  }
+
+  .report-period-input {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .report-reset-button {
+    grid-column: auto;
+  }
+
+  .monthly-kpi-grid > div:nth-child(5) {
+    border-radius: 0;
+  }
+}

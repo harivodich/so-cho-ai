@@ -1,16 +1,25 @@
 # Sổ Chợ AI
 
-Web app mobile-first giúp người bán nhỏ ghi giao dịch, xác nhận trước khi lưu và xem doanh thu/lãi gộp ước tính theo ngày.
+Web app mobile-first giúp người bán nhỏ ghi giao dịch, kiểm tra trước khi lưu và hiểu doanh thu/lãi gộp ước tính mà không cần bảng tính.
 
-## Tuần 1 đã có
+## Chức năng hiện có
 
-- Luồng nhập tay → xem lại → xác nhận → lưu.
-- Sổ giao dịch: lọc, sửa, xóa và xóa dữ liệu của người dùng.
-- Báo cáo doanh thu, chi phí khác và lãi gộp ước tính.
-- Giá vốn chỉ lấy từ lần nhập cùng mặt hàng gần nhất, không muộn hơn thời điểm bán.
-- Local persistence hoạt động ngay trong trình duyệt.
-- Firebase Anonymous Authentication + Firestore adapter và rules đã sẵn sàng khi cấu hình project.
-- Dockerfile cho Cloud Run.
+- Nhập tay hoặc ghi một giao dịch bằng giọng nói; mọi bản nháp đều phải sửa/xác nhận trước khi lưu.
+- Sổ giao dịch theo Firebase Anonymous UID: thêm, sửa, xóa, lọc và xóa toàn bộ dữ liệu.
+- Báo cáo ngày, 7 ngày, tháng hoặc khoảng tùy chọn; lọc theo loại và mặt hàng.
+- Dashboard gồm doanh thu, giá vốn ước tính, chi phí khác, lãi gộp ước tính, số giao dịch bán, giá trị bán trung bình, biểu đồ ngày và xếp hạng mặt hàng.
+- Mục tiêu doanh thu tháng và “Việc cần làm” được tính bằng code. Mục tiêu chỉ lưu trên thiết bị hiện tại.
+- Nhận xét AI cuối ngày chỉ nhận số tổng hợp; không nhận từng giao dịch và không được tự tính số. Hỏi nhanh về doanh thu/lãi/đơn trung bình trả lời trực tiếp bằng code.
+- Xuất CSV đúng kỳ và bộ lọc đang xem; dữ liệu được bảo vệ khỏi công thức spreadsheet. Có link tra giá nông sản công khai, nhưng ứng dụng không tự đổi hay đề xuất giá bán.
+- Dockerfile cho Cloud Run và bộ evaluation TTS/public có thể chạy lại tại [`evaluation/`](evaluation/README.md).
+
+## Nguyên tắc tài chính và riêng tư
+
+- Tiền lưu dưới dạng số nguyên VND.
+- Giá vốn của một giao dịch bán lấy từ lần nhập cùng mặt hàng gần nhất, không muộn hơn thời điểm bán.
+- Nếu có bất kỳ giao dịch bán nào thiếu giá vốn, ứng dụng không hiển thị lãi gộp hoàn chỉnh.
+- Audio chỉ tồn tại trong bộ nhớ để chuyển WAV/gửi phân tích; không lưu Firestore, Cloud Storage hoặc log.
+- Gemini key và Firebase Admin credential chỉ ở server. AI không có đường ghi Firestore.
 
 ## Chạy local
 
@@ -20,19 +29,27 @@ Copy-Item .env.example .env.local
 npm run dev
 ```
 
-Mở `http://localhost:3000`.
+Mở `http://localhost:3000`. Nếu Firebase chưa kết nối, app dùng local storage và hiển thị cảnh báo; không dùng chế độ này cho dữ liệu cần lưu lâu dài.
 
-Nếu chưa cấu hình Firebase, ứng dụng chạy bằng local storage và hiển thị rõ trạng thái đó. Không dùng local mode để thử dữ liệu thật lâu dài.
+## Cấu hình Firebase
 
-## Kết nối Firebase
+1. Tạo Firebase web app, bật Anonymous Authentication và Cloud Firestore.
+2. Điền bốn giá trị Firebase web vào `.env.local` theo `.env.example`.
+3. Deploy [`firestore.rules`](firestore.rules).
+4. Kiểm tra bằng hai cửa sổ ẩn danh để bảo đảm hai UID không đọc dữ liệu của nhau.
 
-1. Tạo Firebase app web trong Google Cloud project.
-2. Bật Anonymous Authentication và Cloud Firestore.
-3. Dán cấu hình web vào `.env.local` theo `.env.example`.
-4. Deploy nội dung `firestore.rules` bằng Firebase Console/CLI.
-5. Kiểm thử bằng hai cửa sổ ẩn danh để bảo đảm dữ liệu không truy cập chéo.
+Firebase web config là cấu hình public. Service-account JSON, Application Default Credentials và Gemini API key không phải public và không được commit.
 
-Không đặt Gemini key ở biến `NEXT_PUBLIC_*`.
+## Cấu hình Gemini
+
+```text
+GEMINI_API_KEY=...
+GEMINI_MODEL=gemini-2.5-flash
+```
+
+`POST /api/extract` và `POST /api/insights` đều xác minh Firebase ID token. Extraction có quota 30 lượt/ngày/người dùng; nhận xét cuối ngày có quota riêng 5 lượt/ngày. Trên local cần Application Default Credentials có quyền Firestore; trên Cloud Run dùng runtime service account với quyền tối thiểu.
+
+Tài liệu chính thức: [Gemini audio](https://ai.google.dev/gemini-api/docs/audio), [Interactions API](https://ai.google.dev/api/interactions-api-v1), [Gemini models](https://ai.google.dev/gemini-api/docs/models).
 
 ## Kiểm tra
 
@@ -40,20 +57,38 @@ Không đặt Gemini key ở biến `NEXT_PUBLIC_*`.
 npm test
 npm run lint
 npm run build
+npm run verify:evidence
 ```
 
-## Triển khai Cloud Run
+## Evaluation không thu dữ liệu cá nhân
 
-Sau khi có Google Cloud project và billing account:
+- 60 câu giao dịch synthetic do dự án tự soạn, nhãn được khóa trước khi gọi Gemini; 30 prompt TTS chỉ được dùng khi dịch vụ TTS khả dụng.
+- 30 audio FLEURS tiếng Việt công khai (CC-BY-4.0): 15 clip rõ và 15 biến thể nhiễu xác định ở 20 dB SNR để đo khả năng từ chối ngoài phạm vi.
+- Runner gọi đúng API ứng dụng, gồm Firebase auth, quota, Zod và Gemini; không dùng prompt đánh giá riêng.
+- `npm run verify:evidence` kiểm tra coverage, provenance, artifact public và các trường không được công bố trước demo/nộp bài.
+- Không gọi metric text/negative-control là accuracy giọng người dùng thật và không gộp mẫu giao dịch với mẫu âm tính thành một con số gây hiểu nhầm.
 
-```powershell
-gcloud run deploy so-cho-ai --source . --region asia-southeast1 --allow-unauthenticated --min-instances 0 --max-instances 1
-```
+Chi tiết và lệnh chạy: [`evaluation/README.md`](evaluation/README.md).
 
-Đặt các biến Firebase trong Cloud Run. Gemini server-side chỉ được thêm khi triển khai route trích xuất ở tuần 2.
+## Triển khai Vercel miễn phí
 
-## Giới hạn hiện tại
+Bản demo công khai dùng Vercel Hobby, không yêu cầu Google Cloud Billing. Xem checklist service account tối thiểu, biến môi trường, deploy và smoke test tại [`docs/vercel-deploy.md`](docs/vercel-deploy.md).
 
-- Chưa triển khai giọng nói, ảnh hóa đơn hoặc Gemini API; các phần này bắt đầu sau khi luồng nhập tay được kiểm thử ổn định.
-- Chưa có tồn kho, thuế, công nợ hoặc nhiều cửa hàng.
-- “Lãi gộp ước tính” không hiển thị nếu thiếu giá vốn của bất kỳ giao dịch bán nào trong ngày.
+`GEMINI_API_KEY` và `FIREBASE_ADMIN_SERVICE_ACCOUNT_JSON` chỉ được đặt trong Vercel Environment Variables; không đưa secret vào image, repository hoặc biến `NEXT_PUBLIC_*`. Cloud Run vẫn có thể dùng sau này nếu có billing; checklist cũ ở [`docs/cloud-access.md`](docs/cloud-access.md).
+
+## Giới hạn công bố
+
+- Voice chỉ hỗ trợ một giao dịch mỗi audio và chưa có benchmark giọng người thật.
+- Chưa hỗ trợ ảnh/hóa đơn, chữ viết tay, tồn kho, thuế, công nợ, nhiều cửa hàng hoặc nhân viên.
+- Mục tiêu và “Việc cần làm” hỗ trợ theo dõi, không phải dự báo hay cam kết tăng doanh thu.
+- Giá công khai phụ thuộc mặt hàng, khu vực và thời điểm; người bán phải tự quyết định giá thực tế.
+
+## Bằng chứng AI/ML
+
+- **Evaluation có thể tái chạy:** 60 câu tiếng Việt do dự án tự soạn, có `expected` khóa trước khi gọi Gemini 2.5 Flash. Runner lưu model, prompt version, timestamp, output JSON/Markdown và metric theo `type`, `amount`, `quantity`, `unitPrice`.
+- **Không cherry-pick demo:** AI Quality Lab publish từ report thật, hiển thị exact-match, tỷ lệ cần người sửa, nhóm lỗi và một ví dụ đúng/sai/guard. Publisher từ chối fixture.
+- **Human-in-the-loop:** Gemini chỉ tạo draft. Zod và Data Quality Guard kiểm tra lại; chỉ nút xác nhận của người dùng mới ghi Firestore.
+- **Insight có căn cứ:** code tính evidence 7 ngày; Gemini chỉ diễn giải aggregate, không nhận raw transaction, UID, audio hoặc transcript.
+- **Nguồn dữ liệu:** text benchmark là project-authored synthetic. Voice benchmark tách riêng, chỉ dùng synthetic/public có manifest và license. Không diễn giải metric text như độ chính xác voice người thật.
+
+Xem [kiến trúc AI/ML](docs/architecture-ai.md), [phương pháp evaluation](evaluation/README.md), [audit AI/ML mới nhất](docs/daily/2026-08-14-status.md) và [kịch bản demo 40 giây](docs/submission-demo-script.md).

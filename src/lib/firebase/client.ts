@@ -1,6 +1,6 @@
 import { getApp, getApps, initializeApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
-import { getFirestore, type Firestore } from "firebase/firestore";
+import { getFirestore, type Firestore } from "firebase/firestore/lite";
 
 export type FirebaseWebConfig = {
   apiKey: string;
@@ -37,4 +37,14 @@ export function getFirebaseClient(): FirebaseClient {
   }
 
   return firebaseClient;
+}
+
+export async function getFirebaseIdToken(): Promise<string> {
+  const { auth } = getFirebaseClient();
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("Phiên Firebase chưa sẵn sàng. Hãy thử lại sau ít giây.");
+  }
+
+  return user.getIdToken();
 }

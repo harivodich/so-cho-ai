@@ -8,10 +8,16 @@
     "start": "next start",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "eval:text:fixture": "node evaluation/scripts/generate-text-fixture.mjs && node evaluation/scripts/run-text-eval.mjs --fixture evaluation/fixtures/text-eval-perfect.jsonl",
+    "eval:text": "node evaluation/scripts/run-text-eval.mjs",
+    "eval:text:publish": "node evaluation/scripts/run-text-eval.mjs && node evaluation/scripts/publish-text-report.mjs",
+    "eval:metrics": "node evaluation/scripts/test-metrics.mjs",
+    "verify:evidence": "node evaluation/scripts/verify-evidence.mjs"
   },
   "dependencies": {
     "firebase": "^12.0.0",
+    "firebase-admin": "^14.2.0",
     "next": "^16.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { calculateDailyReport } from "../src/lib/reports";
+import { calculateDailyReport, calculateMonthlyReport } from "../src/lib/reports";
 import type { ConfirmedTransaction } from "../src/types/transaction";
 
 function transaction(overrides: Partial<ConfirmedTransaction>): ConfirmedTransaction {
@@ -66,5 +66,43 @@ describe("calculateDailyReport", () => {
     );
 
     expect(report.estimatedGrossProfit).toBeNull();
+  });
+});
+
+describe("calculateMonthlyReport", () => {
+  it("summarizes the selected month, retains historical cost basis, and prepares chart data", () => {
+    const report = calculateMonthlyReport(
+      [
+        transaction({ id: "july-sale", quantity: 10, amount: 200_000, occurredAt: "2026-07-20" }),
+        transaction({ id: "july-purchase", type: "purchase", quantity: 20, unitPrice: 20_000, amount: 400_000, occurredAt: "2026-07-31" }),
+        transaction({ id: "aug-sale-1", quantity: 10, unitPrice: 30_000, amount: 300_000, occurredAt: "2026-08-01" }),
+        transaction({ id: "aug-sale-2", quantity: 5, unitPrice: 30_000, amount: 150_000, occurredAt: "2026-08-02" }),
+        transaction({ id: "aug-expense", type: "expense", itemName: "Tiền đá", canonicalItemName: "tiền đá", quantity: null, unit: null, unitPrice: null, amount: 20_000, occurredAt: "2026-08-02" }),
+        transaction({ id: "sep-sale", quantity: 5, amount: 180_000, occurredAt: "2026-09-01" }),
+      ],
+      "2026-08",
+    );
+
+    expect(report.revenue).toBe(450_000);
+    expect(report.estimatedCostOfGoods).toBe(300_000);
+    expect(report.otherExpenses).toBe(20_000);
+    expect(report.estimatedGrossProfit).toBe(130_000);
+    expect(report.previousMonthRevenue).toBe(200_000);
+    expect(report.revenueChangePercent).toBe(125);
+    expect(report.daysWithTransactions).toBe(2);
+    expect(report.bestRevenueDay).toMatchObject({ date: "2026-08-01", revenue: 300_000 });
+    expect(report.dailyRevenue).toHaveLength(31);
+    expect(report.dailyRevenue[0]).toMatchObject({ date: "2026-08-01", revenue: 300_000 });
+    expect(report.topItems[0]).toMatchObject({ itemName: "Xoài", revenue: 450_000, estimatedGrossProfit: 150_000 });
+  });
+
+  it("keeps monthly gross profit incomplete when one sale has no cost basis", () => {
+    const report = calculateMonthlyReport(
+      [transaction({ id: "sale", quantity: null, amount: 350_000, occurredAt: "2026-08-09" })],
+      "2026-08",
+    );
+
+    expect(report.estimatedGrossProfit).toBeNull();
+    expect(report.topItems[0]).toMatchObject({ missingCostSaleCount: 1, estimatedGrossProfit: null });
   });
 });

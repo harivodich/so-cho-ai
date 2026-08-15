@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { UiIcon, type IconName } from "@/components/ui-icon";
 import { currentLocalDate } from "@/lib/date";
 import { createManualDraft, type TransactionDraft, type TransactionType } from "@/types/transaction";
 
@@ -11,10 +12,10 @@ type Props = {
   onPreview: (draft: TransactionDraft) => void;
 };
 
-const typeLabels: Record<TransactionType, string> = {
-  sale: "Bán hàng",
-  purchase: "Nhập hàng",
-  expense: "Chi phí khác",
+const typeOptions: Record<TransactionType, { label: string; icon: IconName }> = {
+  sale: { label: "Bán hàng", icon: "sale" },
+  purchase: { label: "Nhập hàng", icon: "purchase" },
+  expense: { label: "Chi phí", icon: "expense" },
 };
 
 function decimalValue(value: string): number | undefined {
@@ -50,7 +51,7 @@ export function ManualTransactionForm({ initialDraft, onCancel, onPreview }: Pro
     const parsedUnitPrice = decimalValue(unitPrice);
 
     if (!parsedAmount) {
-      setFormError("Nhập tổng tiền lớn hơn 0 trước khi xem lại.");
+      setFormError("Nhập tổng tiền lớn hơn 0 trước khi xem bản nháp.");
       return;
     }
     if ((type === "sale" || type === "purchase") && !itemName.trim()) {
@@ -78,36 +79,37 @@ export function ManualTransactionForm({ initialDraft, onCancel, onPreview }: Pro
 
   return (
     <form className="entry-form" onSubmit={submit} noValidate>
-      <div className="section-heading">
+      <div className="section-heading panel-heading">
         <div>
-          <p className="eyebrow">Nhập tay</p>
-          <h2>Ghi một giao dịch</h2>
+          <h1>Nhập giao dịch</h1>
+          <p className="section-description">Điền nhanh các thông tin bạn có. Bạn sẽ kiểm tra lại trước khi lưu.</p>
         </div>
         <button className="text-button" type="button" onClick={onCancel}>
-          Hủy
+          <UiIcon name="arrow-left" size={18} /> Quay lại
         </button>
       </div>
 
       <fieldset>
         <legend>Loại giao dịch</legend>
         <div className="type-options">
-          {(Object.keys(typeLabels) as TransactionType[]).map((value) => (
+          {(Object.keys(typeOptions) as TransactionType[]).map((value) => (
             <label className={type === value ? "type-option selected" : "type-option"} key={value}>
               <input checked={type === value} name="type" type="radio" value={value} onChange={() => setType(value)} />
-              {typeLabels[value]}
+              <UiIcon name={typeOptions[value].icon} size={19} />
+              <span>{typeOptions[value].label}</span>
             </label>
           ))}
         </div>
       </fieldset>
 
       <label>
-        Tên mặt hàng {type === "expense" ? "(không bắt buộc)" : ""}
-        <input value={itemName} onChange={(event) => setItemName(event.target.value)} placeholder={type === "expense" ? "Ví dụ: tiền đá" : "Ví dụ: xoài"} />
+        <span className="field-label">Tên mặt hàng {type === "expense" ? <em>Không bắt buộc</em> : null}</span>
+        <input value={itemName} onChange={(event) => setItemName(event.target.value)} placeholder={type === "expense" ? "Ví dụ: tiền đá, vận chuyển" : "Ví dụ: xoài Cát Hòa Lộc"} />
       </label>
 
       <div className="field-grid">
         <label>
-          Số lượng
+          <span className="field-label">Số lượng</span>
           <input
             inputMode="decimal"
             min="0"
@@ -122,14 +124,14 @@ export function ManualTransactionForm({ initialDraft, onCancel, onPreview }: Pro
           />
         </label>
         <label>
-          Đơn vị
+          <span className="field-label">Đơn vị</span>
           <input value={unit} onChange={(event) => setUnit(event.target.value)} placeholder="kg" />
         </label>
       </div>
 
       <div className="field-grid">
         <label>
-          Đơn giá (đ)
+          <span className="field-label">Đơn giá <em>đ</em></span>
           <input
             inputMode="numeric"
             min="0"
@@ -139,22 +141,24 @@ export function ManualTransactionForm({ initialDraft, onCancel, onPreview }: Pro
               setUnitPrice(value);
               updateCalculatedAmount(quantity, value);
             }}
-            placeholder="35000"
+            placeholder="35.000"
           />
         </label>
         <label>
-          Tổng tiền (đ) <span className="required">*</span>
-          <input inputMode="numeric" min="1" required value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="700000" />
+          <span className="field-label">Tổng tiền <b>*</b></span>
+          <input inputMode="numeric" min="1" required value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="700.000" />
         </label>
       </div>
 
       <label>
-        Ngày giao dịch
+        <span className="field-label">Ngày giao dịch</span>
         <input type="date" value={occurredAt} onChange={(event) => setOccurredAt(event.target.value)} />
       </label>
 
-      {formError ? <p className="form-error" role="alert">{formError}</p> : null}
-      <button className="primary-button" type="submit">Xem lại trước khi lưu</button>
+      {formError ? <p className="form-error" role="alert"><UiIcon name="alert" size={19} />{formError}</p> : null}
+      <button className="primary-button form-submit" type="submit">
+        Xem bản nháp <UiIcon name="chevron-right" size={19} />
+      </button>
     </form>
   );
 }

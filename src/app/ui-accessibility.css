@@ -1,0 +1,22 @@
+/* Focus and touch-target refinements kept separate from the visual system. */
+.type-option:focus-within {
+  border-color: var(--green);
+  outline: 3px solid rgba(15, 107, 74, 0.28);
+  outline-offset: 2px;
+}
+
+.type-option.selected:focus-within {
+  background: var(--green-soft);
+}
+
+@media (max-width: 560px) {
+  .action-chips {
+    gap: 6px;
+  }
+
+  .action-chips button {
+    min-width: 42px;
+    min-height: 40px;
+    padding: 6px 8px;
+  }
+}

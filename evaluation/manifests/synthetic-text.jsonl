@@ -1,0 +1,12 @@
+{"id":"text-01","source":"synthetic-text","input":"bán 2 ký xoài, mỗi ký 40 nghìn, tổng 80 nghìn","expected":{"type":"sale","quantity":2,"unit":"kg","unitPrice":40000,"amount":80000}}
+{"id":"text-02","source":"synthetic-text","input":"nhập 10 ký cam hết 350 nghìn","expected":{"type":"purchase","quantity":10,"unit":"kg","unitPrice":null,"amount":350000}}
+{"id":"text-03","source":"synthetic-text","input":"trả tiền giữ xe 10k","expected":{"type":"expense","quantity":null,"unit":null,"unitPrice":null,"amount":10000}}
+{"id":"text-04","source":"synthetic-text","input":"bán ba chục trái chuối, được 120 ngàn","expected":{"type":"sale","quantity":30,"unit":"trái","unitPrice":null,"amount":120000}}
+{"id":"text-05","source":"synthetic-text","input":"nhập 5 thùng dâu, một thùng 180 nghìn, tổng 900 nghìn","expected":{"type":"purchase","quantity":5,"unit":"thùng","unitPrice":180000,"amount":900000}}
+{"id":"text-06","source":"synthetic-text","input":"bán rau muống 50 nghìn","expected":{"type":"sale","quantity":null,"unit":null,"unitPrice":null,"amount":50000}}
+{"id":"text-07","source":"synthetic-text","input":"chi tiền bao bì 25 nghìn","expected":{"type":"expense","quantity":null,"unit":null,"unitPrice":null,"amount":25000}}
+{"id":"text-08","source":"synthetic-text","input":"bán 1 ký nho giá 95k","expected":{"type":"sale","quantity":1,"unit":"kg","unitPrice":95000,"amount":95000}}
+{"id":"text-09","source":"synthetic-text","input":"nhập 20kg khoai, 18 nghìn một ký, tổng 360 nghìn","expected":{"type":"purchase","quantity":20,"unit":"kg","unitPrice":18000,"amount":360000}}
+{"id":"text-10","source":"synthetic-text","input":"chi 70 nghìn tiền điện","expected":{"type":"expense","quantity":null,"unit":null,"unitPrice":null,"amount":70000}}
+{"id":"text-11","source":"synthetic-text","input":"bán 4 hộp dâu, mỗi hộp 65 nghìn, được 260 nghìn","expected":{"type":"sale","quantity":4,"unit":"hộp","unitPrice":65000,"amount":260000}}
+{"id":"text-12","source":"synthetic-text","input":"nhập táo 1 triệu 2","expected":{"type":"purchase","quantity":null,"unit":null,"unitPrice":null,"amount":1200000}}

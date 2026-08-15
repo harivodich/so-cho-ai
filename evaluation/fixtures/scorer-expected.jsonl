@@ -1,0 +1,2 @@
+{"id":"transaction","expected":{"type":"sale","amount":80000,"quantity":2,"unitPrice":40000}}
+{"id":"non-transaction","expected":null}

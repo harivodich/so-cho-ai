@@ -1,0 +1,12 @@
+{
+  "id": "google-fleurs-vi-vn-validation",
+  "provider": "Google FLEURS via Hugging Face datasets-server",
+  "dataset": "google/fleurs",
+  "config": "vi_vn",
+  "split": "validation",
+  "license": "CC-BY-4.0",
+  "access": "Public, non-gated API access verified on 2026-08-13.",
+  "purpose": "Public Vietnamese non-transaction negative-control audio only.",
+  "privacy": "Audio is stored locally under evaluation/inputs and ignored by Git. Generated manifests omit speaker identifiers, gender and raw dataset metadata.",
+  "limitations": "This source does not contain market transactions and cannot establish transaction extraction accuracy."
+}

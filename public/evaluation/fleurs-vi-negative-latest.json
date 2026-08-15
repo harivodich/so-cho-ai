@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "completedAt": "2026-08-13T06:11:58.875Z",
+  "model": "gemini-2.5-flash",
+  "dataset": {
+    "id": "google-fleurs-vi-vn-validation",
+    "license": "CC-BY-4.0",
+    "caseCount": 30,
+    "kind": "public-audio-negative-control"
+  },
+  "metrics": {
+    "nonTransactionRejection": {
+      "correct": 24,
+      "total": 30,
+      "accuracy": 80
+    },
+    "invalidJson": {
+      "count": 0,
+      "total": 30,
+      "rate": 0
+    }
+  },
+  "errorGroups": {
+    "http-error": 6
+  },
+  "scope": "Vietnamese public speech outside the transaction domain; not transaction extraction accuracy.",
+  "privacy": "No audio bytes, transcript, speaker identifier, raw model response or API key is published."
+}
