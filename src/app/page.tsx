@@ -9,6 +9,7 @@ import { TransactionList } from "@/components/transaction-list";
 import { UiIcon } from "@/components/ui-icon";
 import { VoiceTransactionRecorder } from "@/components/voice-transaction-recorder";
 import { currentLocalDate, formatVietnameseDate } from "@/lib/date";
+import { applyVoiceConfirmationDefaults } from "@/lib/voice-confirmation-defaults";
 import { clearRevenueGoals } from "@/lib/revenue-goals";
 import { useTransactions } from "@/hooks/use-transactions";
 import type {
@@ -132,7 +133,7 @@ export default function HomePage() {
 
     setEditing(null);
     setDraftInputMethod("voice");
-    setDraft(payload.drafts[0] as TransactionDraft);
+    setDraft(applyVoiceConfirmationDefaults(payload.drafts[0] as TransactionDraft, currentLocalDate()));
     setView("confirm");
   }
 

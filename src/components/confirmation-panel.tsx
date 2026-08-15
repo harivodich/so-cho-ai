@@ -18,8 +18,21 @@ const labels = {
   expense: "Chi phí khác",
 } as const;
 
+const missingFieldMessages: Record<string, string> = {
+  type: "Chưa có loại giao dịch. Chọn loại trước khi lưu.",
+  itemName: "Chưa nhận rõ mặt hàng. Bạn có thể bổ sung trước khi lưu.",
+  quantity: "Chưa có số lượng. Bạn vẫn có thể lưu vì đã có tổng tiền.",
+  unitPrice: "Chưa có đơn giá. Bạn vẫn có thể lưu vì đã có tổng tiền.",
+  amount: "Chưa có tổng tiền. Nhập tổng tiền trước khi lưu.",
+  occurredAt: "Chưa có ngày giao dịch. Chọn ngày trước khi lưu.",
+};
+
+function missingFieldMessage(field: string): string {
+  return missingFieldMessages[field] ?? `Cần kiểm tra: ${field}`;
+}
+
 export function ConfirmationPanel({ draft, isSaving, onEdit, onSave }: Props) {
-  const notices = [...draft.warnings, ...draft.missingFields.map((field) => `Thiếu thông tin: ${field}`)];
+  const notices = [...draft.warnings, ...draft.missingFields.map(missingFieldMessage)];
 
   return (
     <section className="confirmation-panel" aria-labelledby="confirmation-title">
