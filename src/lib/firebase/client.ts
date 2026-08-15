@@ -1,5 +1,5 @@
 import { getApp, getApps, initializeApp, type FirebaseApp } from "firebase/app";
-import { getAuth, type Auth } from "firebase/auth";
+import { browserLocalPersistence, initializeAuth, type Auth } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore/lite";
 
 export type FirebaseWebConfig = {
@@ -27,7 +27,11 @@ export function configureFirebaseClient(config: FirebaseWebConfig): FirebaseClie
   }
 
   const app = getApps().length > 0 ? getApp() : initializeApp(config);
-  firebaseClient = { app, auth: getAuth(app), db: getFirestore(app) };
+  // Anonymous sessions should survive reloads, but do not need Firebase Auth's
+  // IndexedDB-backed default persistence. That storage closes while a tab is
+  // hidden and can reject the initial sign-in in an embedded/mobile browser.
+  const auth = initializeAuth(app, { persistence: browserLocalPersistence });
+  firebaseClient = { app, auth, db: getFirestore(app) };
   return firebaseClient;
 }
 
