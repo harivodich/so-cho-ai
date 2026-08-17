@@ -74,7 +74,7 @@ export function useRevenueGoal({ month, userId }: Props) {
         const effectiveTarget = effectiveGoals[month];
         if (typeof effectiveTarget === "number") setTarget(effectiveTarget);
       } catch (reason) {
-        if (active) setError(reason instanceof Error ? reason.message : "Khong the dong bo muc tieu.");
+        if (active) setError(reason instanceof Error ? reason.message : "Không thể đồng bộ mục tiêu.");
       }
     }
 

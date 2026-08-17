@@ -170,7 +170,7 @@ export function useDebts(scope?: string | null) {
     const repository = repositoryRef.current;
     const deviceFallback = deviceFallbackRef.current;
     if (!repository || !deviceFallback || repository.kind !== "firebase") {
-      throw new Error("Hay dang nhap tai khoan that truoc khi nhap cong no tren thiet bi.");
+      throw new Error("Hãy đăng nhập tài khoản thật trước khi nhập công nợ trên thiết bị.");
     }
     const deviceEntries = await deviceFallback.list();
     for (const entry of deviceEntries) await repository.save(entry);

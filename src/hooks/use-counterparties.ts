@@ -164,7 +164,7 @@ export function useCounterparties(scope?: string | null) {
     const repository = repositoryRef.current;
     const deviceLocal = deviceFallbackRef.current;
     if (!repository || !deviceLocal || repository.kind !== "firebase") {
-      throw new Error("Hay dang nhap tai khoan that truoc khi nhap doi tac tren thiet bi.");
+      throw new Error("Hãy đăng nhập tài khoản thật trước khi nhập đối tác trên thiết bị.");
     }
     const deviceItems = await deviceLocal.list();
     for (const item of deviceItems) await repository.save(item);

@@ -47,7 +47,7 @@ export function useAuth() {
         try {
           await consumeFirebaseRedirectResult();
         } catch (reason) {
-          if (active) setError(reason instanceof Error ? reason.message : 'Khong the hoan tat dang nhap Google.');
+          if (active) setError(reason instanceof Error ? reason.message : 'Không thể hoàn tất đăng nhập Google.');
         }
         unsubscribe = subscribeFirebaseAuth((nextUser) => {
           if (!active) return;

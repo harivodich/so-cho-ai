@@ -303,7 +303,7 @@ export function useCatalog(scope?: string | null) {
     const repository = repositoryRef.current;
     const deviceLocal = deviceFallbackRef.current;
     if (!repository || !deviceLocal || repository.kind !== "firebase") {
-      throw new Error("Hay dang nhap tai khoan that truoc khi nhap danh muc tren thiet bi.");
+      throw new Error("Hãy đăng nhập tài khoản thật trước khi nhập danh mục trên thiết bị.");
     }
     const [deviceProducts, deviceMovements] = await Promise.all([deviceLocal.listProducts(), deviceLocal.listMovements()]);
     for (const product of deviceProducts) await repository.saveProduct(product);
