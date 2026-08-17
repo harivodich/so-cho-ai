@@ -40,6 +40,12 @@ describe("account isolation contracts", () => {
     expect(emailFlow).toContain("await signInWithEmailAndPassword(auth, email.trim(), password);");
     expect(emailFlow).not.toContain("await signOut(auth);");
   });
+  it("configures the browser redirect resolver for Firebase Auth", () => {
+    const client = readFileSync("src/lib/firebase/client.ts", "utf8");
+    expect(client).toContain("browserPopupRedirectResolver");
+    expect(client).toContain("popupRedirectResolver: browserPopupRedirectResolver");
+  });
+
   it("offers an explicit Google existing-account path without linking", () => {
     const client = readFileSync("src/lib/firebase/client.ts", "utf8");
     const start = client.indexOf("export async function signInWithExistingGoogleAccount");

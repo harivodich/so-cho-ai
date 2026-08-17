@@ -1,6 +1,7 @@
 import { getApp, getApps, initializeApp, type FirebaseApp } from "firebase/app";
 import {
   browserLocalPersistence,
+  browserPopupRedirectResolver,
   createUserWithEmailAndPassword,
   EmailAuthProvider,
   getRedirectResult,
@@ -43,7 +44,10 @@ export function configureFirebaseClient(config: FirebaseWebConfig): FirebaseClie
   if (firebaseClient) return firebaseClient;
 
   const app = getApps().length > 0 ? getApp() : initializeApp(config);
-  const auth = initializeAuth(app, { persistence: browserLocalPersistence });
+  const auth = initializeAuth(app, {
+    persistence: browserLocalPersistence,
+    popupRedirectResolver: browserPopupRedirectResolver,
+  });
   firebaseClient = { app, auth, db: getFirestore(app) };
   return firebaseClient;
 }
