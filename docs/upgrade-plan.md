@@ -85,7 +85,7 @@ Cổng: tài khoản A không thấy mục tiêu, đối tác hoặc dữ liệu
 - Dashboard: báo cáo ngày/tháng, tồn kho, công nợ, thuế tham khảo và mục tiêu doanh thu đã có công thức/test riêng.
 - Offline: transaction, catalog, debt và mục tiêu có outbox theo scope; cần smoke test thủ công khi tắt mạng.
 - OCR: đã có 15 fixture SVG + 15 PNG, runner `npm run eval:ocr` và scorer `npm run score:ocr`. Dry-run hoàn hảo chỉ kiểm tra pipeline; chưa phải accuracy model.
-- Current automated verification: 46 files / 129 tests pass, lint pass, build pass, evidence pass; Firebase reconnect, outbox refresh, account-scoped cache cleanup, and aggregate pending-sync status and partial-save retry idempotency are covered by contract tests; public smoke passes at https://so-cho-ai-tau.vercel.app and local production smoke passes.
+- Current automated verification: 46 files / 130 tests pass, lint pass, build pass, evidence pass; Firebase reconnect, outbox refresh, account-scoped cache cleanup, and aggregate pending-sync status and partial-save retry idempotency are covered by contract tests; public smoke passes at https://so-cho-ai-tau.vercel.app and local production smoke passes.
 
 ### Cổng còn mở trước khi gọi là hoàn tất
 

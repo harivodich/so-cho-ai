@@ -109,6 +109,10 @@ describe("account isolation contracts", () => {
     expect(clearLocal).toContain("await refreshDeviceLocalCount();");
     expect(clearLocal).not.toContain("deviceFallbackRef.current?.clear()");
   });
+  it("keeps the account trigger touch target accessible", () => {
+    const css = readFileSync("src/app/globals.css", "utf8");
+    expect(css).toContain(".account-trigger {\n  min-height: 44px;");
+  });
   it("exposes account drawer state to assistive technology", () => {
     const page = readFileSync("src/app/page.tsx", "utf8");
     const panel = readFileSync("src/components/account-panel.tsx", "utf8");
