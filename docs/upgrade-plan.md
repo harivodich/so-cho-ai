@@ -89,8 +89,8 @@ Cổng: tài khoản A không thấy mục tiêu, đối tác hoặc dữ liệu
 
 ### Cổng còn mở trước khi gọi là hoàn tất
 
-1. Firebase Console: bật Google/Email, authorized domains, publish rules.
-2. Vercel: đặt đúng biến Production/Preview và redeploy.
+1. Firebase Auth Google/Email và production authorized domain đã được xác nhận bằng đăng nhập thật; còn phải publish firestore.rules.
+2. Vercel Production env, redeploy và public smoke đã pass; Preview env vẫn cần kiểm tra nếu dùng preview URL.
 3. Tạo hai tài khoản thật để kiểm tra cô lập A/B, reload, logout/login, link anonymous, backup/import và xóa tài khoản.
 4. Chạy offline smoke test trên trình duyệt khác.
 5. Dùng ID token tài khoản thật cho OCR runner và lưu report; không dùng token anonymous, không commit token.
