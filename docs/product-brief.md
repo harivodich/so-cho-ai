@@ -23,9 +23,10 @@ Người dùng nhập giao dịch bằng giọng nói, nhập tay hoặc hóa đ
 - Nhập tay, sau đó là voice-first.
 - Xác nhận trước khi lưu.
 - Sổ giao dịch, sửa/xóa, báo cáo theo ngày.
-- Firebase Anonymous Authentication, Firestore và Vercel cho bản demo công khai. Cloud Run là lựa chọn sau này khi có billing.
+- Firebase Authentication (Google + Email/Password; chỉ nâng cấp phiên anonymous cũ), Firestore và Vercel cho bản demo công khai. Cloud Run là lựa chọn sau này khi có billing.
+- Catalog, tồn kho, công nợ và thuế tham khảo theo UID; backup/import và offline outbox được hỗ trợ.
 
-Không làm: thuế, công nợ, tồn kho, nhiều cửa hàng, nhân viên, dự báo dài hạn hoặc cam kết đọc mọi chữ viết tay.
+Không làm: nhiều cửa hàng, nhân viên, dự báo dài hạn hoặc cam kết đọc mọi chữ viết tay.
 
 ## Quy tắc dữ liệu và quyền riêng tư
 

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { taxLineSchema } from "@/types/tax";
 
 export const transactionTypes = ["sale", "purchase", "expense"] as const;
 export const inputMethods = ["manual", "voice", "image"] as const;
@@ -30,11 +31,16 @@ export const transactionDraftSchema = z.object({
   missingFields: z.array(z.string()),
   warnings: z.array(z.string()),
   qualityChecks: z.array(dataQualityCheckSchema).default([]),
+  tax: taxLineSchema.optional(),
+}).superRefine((draft, context) => {
+  if (draft.tax && draft.amount !== null && draft.tax.subtotal !== draft.amount) {
+    context.addIssue({ code: "custom", path: ["tax", "subtotal"], message: "Tax subtotal must match transaction amount." });
+  }
 });
 
 export type TransactionDraft = z.infer<typeof transactionDraftSchema>;
 
-export const confirmedTransactionSchema = transactionDraftSchema.extend({
+export const confirmedTransactionSchema = transactionDraftSchema.safeExtend({
   id: z.string().min(1),
   userId: z.string().min(1),
   inputMethod: z.enum(inputMethods),

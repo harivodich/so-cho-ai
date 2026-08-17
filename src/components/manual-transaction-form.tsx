@@ -34,6 +34,8 @@ export function ManualTransactionForm({ initialDraft, onCancel, onPreview }: Pro
   const [unitPrice, setUnitPrice] = useState(initialDraft?.unitPrice?.toString() ?? "");
   const [amount, setAmount] = useState(initialDraft?.amount?.toString() ?? "");
   const [occurredAt, setOccurredAt] = useState(initialDraft?.occurredAt ?? currentLocalDate());
+  const [taxApplied, setTaxApplied] = useState(initialDraft?.tax?.applied ?? false);
+  const [taxRate, setTaxRate] = useState(String(initialDraft?.tax?.taxRatePercent ?? 0));
   const [formError, setFormError] = useState<string | null>(null);
 
   function updateCalculatedAmount(nextQuantity: string, nextUnitPrice: string) {
@@ -64,17 +66,26 @@ export function ManualTransactionForm({ initialDraft, onCancel, onPreview }: Pro
     }
 
     setFormError(null);
-    onPreview(
-      createManualDraft({
-        type,
-        itemName,
-        quantity: parsedQuantity,
-        unit: unit.trim() || undefined,
-        unitPrice: parsedUnitPrice,
-        amount: parsedAmount,
-        occurredAt,
-      }),
-    );
+    const parsedTaxRate = Math.min(Math.max(Number(taxRate) || 0, 0), 100);
+    const baseDraft = createManualDraft({
+      type,
+      itemName,
+      quantity: parsedQuantity,
+      unit: unit.trim() || undefined,
+      unitPrice: parsedUnitPrice,
+      amount: parsedAmount,
+      occurredAt,
+    });
+    onPreview({
+      ...baseDraft,
+      tax: {
+        applied: taxApplied,
+        subtotal: parsedAmount,
+        taxRatePercent: taxApplied ? parsedTaxRate : 0,
+        taxAmount: taxApplied ? Math.round(parsedAmount * parsedTaxRate / 100) : 0,
+        total: parsedAmount + (taxApplied ? Math.round(parsedAmount * parsedTaxRate / 100) : 0),
+      },
+    });
   }
 
   return (
@@ -150,6 +161,11 @@ export function ManualTransactionForm({ initialDraft, onCancel, onPreview }: Pro
         </label>
       </div>
 
+      <fieldset className="tax-inline-fields">
+        <legend>Thuế (tùy chọn)</legend>
+        <label><span className="field-label"><input type="checkbox" checked={taxApplied} onChange={(event) => setTaxApplied(event.target.checked)} /> Áp dụng thuế cho giao dịch này</span></label>
+        {taxApplied ? <label><span className="field-label">Tỷ lệ thuế (%)</span><input type="number" min="0" max="100" step="0.01" value={taxRate} onChange={(event) => setTaxRate(event.target.value)} /></label> : null}
+      </fieldset>
       <label>
         <span className="field-label">Ngày giao dịch</span>
         <input type="date" value={occurredAt} onChange={(event) => setOccurredAt(event.target.value)} />

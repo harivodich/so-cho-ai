@@ -36,11 +36,11 @@ Không import trực tiếp toàn bộ `.env.local` vào dashboard. Tạo từng
 ## 3. Deploy và smoke test
 
 1. Bấm **Deploy**. Vercel trả một URL `https://…vercel.app`.
-2. Mở URL bằng cửa sổ ẩn danh và xác nhận `/api/firebase-config` trả `configured: true`.
+2. Open the URL, sign in to a real Google or Email/Password account, and confirm `/api/firebase-config` returns `configured: true`.
 3. Nhập tay một giao dịch, tải lại trang, bảo đảm dữ liệu vẫn còn.
-4. Mở cửa sổ ẩn danh thứ hai; UID mới không được thấy dữ liệu cửa sổ đầu.
+4. Open a second clean browser profile, sign in as account B, and confirm account B cannot see account A data.
 5. Thử một request AI hợp lệ và một request thiếu bearer token; request thiếu token phải nhận `401`.
-6. Nếu Anonymous Authentication báo lỗi domain, thêm hostname `…vercel.app` vào Firebase Authentication → Settings → Authorized domains rồi thử lại.
+6. If Google or Email/Password login reports a domain error, add the `…vercel.app` hostname under Firebase Authentication → Settings → Authorized domains.
 
 ## Sự cố thường gặp
 
@@ -49,6 +49,6 @@ Không import trực tiếp toàn bộ `.env.local` vào dashboard. Tạo từng
 | API trả `503` khi xác thực Firebase | JSON service account phải nguyên vẹn, cùng project `sochoai`, không có prefix `NEXT_PUBLIC_`; redeploy sau khi sửa. |
 | Build có giao diện nhưng Firebase báo chưa cấu hình | Kiểm tra đủ bốn biến `NEXT_PUBLIC_FIREBASE_*` ở môi trường Production. |
 | Gemini trả `503` | Kiểm tra `GEMINI_API_KEY`, model `gemini-2.5-flash`, quota Gemini; không gửi key qua chat để debug. |
-| Vercel URL hoạt động nhưng Firebase đăng nhập lỗi | Kiểm tra Anonymous Authentication đang bật và hostname nằm trong Authorized domains khi Firebase yêu cầu. |
+| Vercel URL hoạt động nhưng Firebase đăng nhập lỗi | Kiểm tra Google và Email/Password providers đã bật, hostname nằm trong Authorized domains. |
 
 Vercel Hobby có giới hạn dành cho demo nhỏ. [Vercel Hobby](https://vercel.com/docs/plans/hobby) và [Vercel Environment Variables](https://vercel.com/docs/environment-variables) là nguồn tham chiếu cho quota/cấu hình hiện hành. Hướng dẫn Cloud Run cũ vẫn nằm ở [`cloud-access.md`](cloud-access.md) nếu sau này có billing; không cần dùng nó cho deployment này.

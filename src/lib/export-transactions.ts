@@ -37,7 +37,7 @@ export function transactionsForExport(
  * UTF-8 BOM makes Vietnamese text open correctly in Excel.
  */
 export function serializeTransactionsCsv(transactions: ConfirmedTransaction[]): string {
-  const header = ["Ngày", "Loại", "Mặt hàng", "Số lượng", "Đơn vị", "Đơn giá (VND)", "Tổng tiền (VND)", "Cách nhập"];
+  const header = ["Ngày", "Loại", "Mặt hàng", "Số lượng", "Đơn vị", "Đơn giá (VND)", "Tổng tiền (VND)", "Cách nhập", "Tax applied", "Tax rate (%)", "Tax amount (VND)", "Total after tax (VND)"];
   const rows = transactions.map((transaction) => [
     transaction.occurredAt.slice(0, 10),
     TYPE_LABELS[transaction.type],
@@ -47,6 +47,10 @@ export function serializeTransactionsCsv(transactions: ConfirmedTransaction[]): 
     transaction.unitPrice,
     transaction.amount,
     transaction.inputMethod,
+    transaction.tax?.applied ? "Yes" : "No",
+    transaction.tax?.taxRatePercent ?? 0,
+    transaction.tax?.taxAmount ?? 0,
+    transaction.tax?.total ?? transaction.amount,
   ]);
   return `\uFEFF${[header, ...rows].map((row) => row.map(safeCsvCell).join(CSV_DELIMITER)).join("\r\n")}\r\n`;
 }

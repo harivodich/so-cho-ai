@@ -1,4 +1,3 @@
-import { signInAnonymously } from "firebase/auth";
 import {
   collection,
   deleteDoc,
@@ -15,27 +14,20 @@ import type { TransactionRepository } from "./repository";
 
 export class FirebaseTransactionRepository implements TransactionRepository {
   readonly kind = "firebase" as const;
-  private uid: string | null = null;
 
-  private async userId(): Promise<string> {
-    if (this.uid) {
-      return this.uid;
-    }
-
-    const { auth } = getFirebaseClient();
-    const credential = auth.currentUser ? { user: auth.currentUser } : await signInAnonymously(auth);
-    this.uid = credential.user.uid;
-    return this.uid;
+  private userId(): string {
+    const uid = getFirebaseClient().auth.currentUser?.uid;
+    if (!uid) throw new Error("SIGN_IN_REQUIRED");
+    return uid;
   }
 
-  private async transactionsCollection() {
+  private transactionsCollection() {
     const { db } = getFirebaseClient();
-    const uid = await this.userId();
-    return collection(db, "users", uid, "transactions");
+    return collection(db, "users", this.userId(), "transactions");
   }
 
   async list(): Promise<ConfirmedTransaction[]> {
-    const snapshot = await getDocs(await this.transactionsCollection());
+    const snapshot = await getDocs(this.transactionsCollection());
     return snapshot.docs
       .map((item) => item.data() as ConfirmedTransaction)
       .sort((left, right) => {
@@ -45,18 +37,16 @@ export class FirebaseTransactionRepository implements TransactionRepository {
   }
 
   async save(transaction: ConfirmedTransaction): Promise<void> {
-    const transactions = await this.transactionsCollection();
-    const uid = await this.userId();
-    await setDoc(doc(transactions, transaction.id), { ...transaction, userId: uid });
+    const uid = this.userId();
+    await setDoc(doc(this.transactionsCollection(), transaction.id), { ...transaction, userId: uid });
   }
 
   async remove(id: string): Promise<void> {
-    const transactions = await this.transactionsCollection();
-    await deleteDoc(doc(transactions, id));
+    await deleteDoc(doc(this.transactionsCollection(), id));
   }
 
   async clear(): Promise<void> {
-    const transactions = await this.transactionsCollection();
+    const transactions = this.transactionsCollection();
     const snapshot = await getDocs(transactions);
     const { db } = getFirebaseClient();
     const batch = writeBatch(db);

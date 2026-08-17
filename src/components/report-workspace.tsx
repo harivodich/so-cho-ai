@@ -4,9 +4,12 @@ import { useMemo, useState } from "react";
 
 import { DailyReport } from "@/components/daily-report";
 import { DailyInsight } from "@/components/daily-insight";
+import { InventoryWorkspace } from "@/components/inventory-workspace";
 import { EvaluationLab } from "@/components/evaluation-lab";
 import { MonthlyDashboard, PeriodDashboard } from "@/components/monthly-dashboard";
+import { CashFlowPanel } from "@/components/cash-flow-panel";
 import { RevenueGoalPanel } from "@/components/revenue-goal-panel";
+import { TaxEstimatePanel } from "@/components/tax-estimate-panel";
 import { UiIcon } from "@/components/ui-icon";
 import {
   addDays,
@@ -23,13 +26,19 @@ import {
   type ReportFilters,
 } from "@/lib/reports";
 import type { ConfirmedTransaction, TransactionType } from "@/types/transaction";
+import type { Product, StockMovement } from "@/types/catalog";
 
+import type { DebtEntry } from "@/types/debt";
 type ReportMode = "day" | "week" | "month" | "custom";
 
 type Props = {
   focusDate: string;
+  debts?: DebtEntry[];
   getIdToken: () => Promise<string>;
   transactions: ConfirmedTransaction[];
+  products?: Product[];
+  movements?: StockMovement[];
+  userId?: string | null;
 };
 
 const TRANSACTION_TYPE_OPTIONS: Array<{ value: "all" | TransactionType; label: string }> = [
@@ -39,7 +48,7 @@ const TRANSACTION_TYPE_OPTIONS: Array<{ value: "all" | TransactionType; label: s
   { value: "expense", label: "Chỉ chi phí khác" },
 ];
 
-export function ReportWorkspace({ focusDate, getIdToken, transactions }: Props) {
+export function ReportWorkspace({ debts = [], focusDate, getIdToken, transactions, products = [], movements = [], userId = null }: Props) {
   const [reportMode, setReportMode] = useState<ReportMode>("day");
   const [selectedDate, setSelectedDate] = useState(focusDate);
   const [selectedMonth, setSelectedMonth] = useState(focusDate.slice(0, 7));
@@ -191,10 +200,12 @@ export function ReportWorkspace({ focusDate, getIdToken, transactions }: Props) 
         </div>
       </section>
 
+      <InventoryWorkspace asOfDate={activeEndDate} movements={movements} products={products} transactions={transactions} />
+
       {reportMode === "day" ? (
         <>
           <DailyReport report={dailyReport} />
-          <DailyInsight evidence={sevenDayEvidence} getIdToken={getIdToken} report={dailyReport} />
+          <DailyInsight aiEnabled={Boolean(userId)} evidence={sevenDayEvidence} getIdToken={getIdToken} report={dailyReport} />
         </>
       ) : null}
       {reportMode === "week" ? (
@@ -205,8 +216,10 @@ export function ReportWorkspace({ focusDate, getIdToken, transactions }: Props) 
       ) : null}
       {reportMode === "month" ? (
         <>
-          <RevenueGoalPanel report={monthlyReport} />
+          <CashFlowPanel debts={debts} endDate={monthlyReport.endDate} startDate={monthlyReport.startDate} transactions={transactions} />
+          <RevenueGoalPanel report={monthlyReport} userId={userId} />
           <MonthlyDashboard report={monthlyReport} />
+          <TaxEstimatePanel endDate={monthlyReport.endDate} report={monthlyReport} startDate={monthlyReport.startDate} transactions={transactions} />
         </>
       ) : null}
       {reportMode === "custom" && customRangeIsValid ? (

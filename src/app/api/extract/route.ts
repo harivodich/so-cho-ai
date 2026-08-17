@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 
 import { getFirebaseAdminAuth, getFirebaseAdminDb } from "@/lib/firebase/admin";
-import { extractTransactionFromAudio, GeminiRequestError } from "@/lib/extraction/gemini";
+import { extractTransactionFromAudio, extractTransactionsFromImage, GeminiRequestError } from "@/lib/extraction/gemini";
 import { ExtractionQuotaError, enforceExtractionQuota, vietnamDateKey } from "@/lib/extraction/quota";
 import { applyDataQualityGuard } from "@/lib/extraction/data-quality";
 import { ExtractionValidationError } from "@/lib/extraction/schema";
 import { validateAudioUpload } from "@/lib/extraction/audio-validation";
+import { validateImageUpload } from "@/lib/extraction/image-validation";
 
 export const runtime = "nodejs";
 
@@ -39,7 +40,11 @@ async function authenticatedUserId(request: Request): Promise<string | NextRespo
   }
 
   try {
-    return (await getFirebaseAdminAuth().verifyIdToken(idToken, true)).uid;
+    const decoded = await getFirebaseAdminAuth().verifyIdToken(idToken, true);
+    if (decoded.firebase?.sign_in_provider === "anonymous") {
+      return errorResponse("Hãy đăng nhập tài khoản thật trước khi dùng trích xuất AI.", 403);
+    }
+    return decoded.uid;
   } catch (error) {
     const code = typeof error === "object" && error && "code" in error ? String(error.code) : "";
     if (code.startsWith("auth/")) {
@@ -50,6 +55,10 @@ async function authenticatedUserId(request: Request): Promise<string | NextRespo
 }
 
 export async function POST(request: Request) {
+  const contentLength = Number(request.headers.get("content-length") ?? 0);
+  if (Number.isFinite(contentLength) && contentLength > 6 * 1024 * 1024) {
+    return errorResponse("Tệp tải lên vượt giới hạn cho phép.", 413);
+  }
   const userId = await authenticatedUserId(request);
   if (userId instanceof NextResponse) return userId;
 
@@ -60,25 +69,31 @@ export async function POST(request: Request) {
     return errorResponse("Yêu cầu audio không hợp lệ.", 400);
   }
 
-  if (formData.get("mode") !== "voice") {
-    return errorResponse("Chỉ hỗ trợ mode voice ở phiên bản này.", 400);
+  const mode = formData.get("mode");
+  if (mode !== "voice" && mode !== "image") {
+    return errorResponse("Mode trích xuất không hợp lệ.", 400);
   }
 
-  const audio = formData.get("audio");
-  if (!(audio instanceof File)) {
-    return errorResponse("Chưa nhận được file audio.", 400);
+  const file = formData.get(mode === "voice" ? "audio" : "image");
+  if (!(file instanceof File)) {
+    return errorResponse(mode === "voice" ? "Chưa nhận được file audio." : "Chưa nhận được file ảnh.", 400);
   }
-  const audioValidation = validateAudioUpload(audio.size, audio.type);
-  if (!audioValidation.valid) {
-    return errorResponse(audioValidation.message, audioValidation.status);
+  const fileValidation = mode === "voice"
+    ? validateAudioUpload(file.size, file.type)
+    : validateImageUpload(file.size, file.type);
+  if (!fileValidation.valid) {
+    return errorResponse(fileValidation.message, fileValidation.status);
   }
 
   try {
     await enforceExtractionQuota(userId);
-    const audioBase64 = Buffer.from(await audio.arrayBuffer()).toString("base64");
+    const fileBase64 = Buffer.from(await file.arrayBuffer()).toString("base64");
     const currentDate = vietnamDateKey(new Date());
+    const extraction = mode === "voice"
+      ? extractTransactionFromAudio({ audioBase64: fileBase64, mimeType: file.type, currentDate })
+      : extractTransactionsFromImage({ imageBase64: fileBase64, mimeType: file.type, currentDate });
     const [drafts, history] = await Promise.all([
-      extractTransactionFromAudio({ audioBase64, mimeType: audio.type, currentDate }),
+      extraction,
       recentTransactionHistory(userId),
     ]);
     const checkedDrafts = drafts.map((draft) => applyDataQualityGuard(draft, { currentDate, history }));
@@ -90,6 +105,6 @@ export async function POST(request: Request) {
       const status = error.kind === "configuration" ? 503 : error.kind === "quota" ? 429 : 502;
       return errorResponse(error.message, status);
     }
-    return errorResponse("Không thể xử lý audio lúc này. Hãy thử nhập tay.", 502);
+    return errorResponse(mode === "voice" ? "Không thể xử lý audio lúc này. Hãy thử nhập tay." : "Không thể đọc ảnh hóa đơn lúc này. Hãy chụp lại ảnh rõ hơn hoặc nhập tay.", 502);
   }
 }

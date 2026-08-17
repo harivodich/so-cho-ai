@@ -10,6 +10,7 @@ export type IconName =
   | "chevron-right"
   | "expense"
   | "info"
+  | "image"
   | "microphone"
   | "pencil"
   | "plus"
@@ -45,6 +46,7 @@ export function UiIcon({ name, size = 20, strokeWidth = 1.9, ...props }: Props) 
       {name === "chevron-right" ? <path {...common} d="m9 18 6-6-6-6" /> : null}
       {name === "expense" ? <><circle {...common} cx="12" cy="12" r="8" /><path {...common} d="M8.5 12h7" /></> : null}
       {name === "info" ? <><circle {...common} cx="12" cy="12" r="8.5" /><path {...common} d="M12 10.5V16M12 8h.01" /></> : null}
+      {name === "image" ? <><rect {...common} height="16" rx="2" width="18" x="3" y="4" /><circle {...common} cx="8.5" cy="9" r="1.5" /><path {...common} d="m4.5 17 5-5 3.5 3 2.5-2.5 4 4" /></> : null}
       {name === "microphone" ? <><rect {...common} height="11" rx="3" width="6" x="9" y="3" /><path {...common} d="M6.5 11.5a5.5 5.5 0 0 0 11 0M12 17v4M8.5 21h7" /></> : null}
       {name === "pencil" ? <><path {...common} d="m4 16.5-.5 4 4-.5L19 8.5 15.5 5 4 16.5Z" /><path {...common} d="m14.5 6 3.5 3.5" /></> : null}
       {name === "plus" ? <path {...common} d="M12 5v14M5 12h14" /> : null}

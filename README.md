@@ -5,10 +5,10 @@ Web app mobile-first giúp người bán nhỏ ghi giao dịch, kiểm tra trư�
 ## Chức năng hiện có
 
 - Nhập tay hoặc ghi một giao dịch bằng giọng nói; mọi bản nháp đều phải sửa/xác nhận trước khi lưu.
-- Sổ giao dịch theo Firebase Anonymous UID: thêm, sửa, xóa, lọc và xóa toàn bộ dữ liệu.
+- Sổ giao dịch theo tài khoản Google hoặc Email/Password: thêm, sửa, xóa, lọc và xóa toàn bộ dữ liệu.
 - Báo cáo ngày, 7 ngày, tháng hoặc khoảng tùy chọn; lọc theo loại và mặt hàng.
-- Dashboard gồm doanh thu, giá vốn ước tính, chi phí khác, lãi gộp ước tính, số giao dịch bán, giá trị bán trung bình, biểu đồ ngày và xếp hạng mặt hàng.
-- Mục tiêu doanh thu tháng và “Việc cần làm” được tính bằng code. Mục tiêu chỉ lưu trên thiết bị hiện tại.
+- Dashboard gồm doanh thu, tồn kho, công nợ, thuế tham khảo, dòng tiền công nợ đã ghi nhận, mục tiêu doanh thu và các báo cáo theo kỳ.
+- Mục tiêu doanh thu tháng và “Việc cần làm” được tính bằng code. Mục tiêu được scope theo UID và có fallback local khi offline.
 - Nhận xét AI cuối ngày chỉ nhận số tổng hợp; không nhận từng giao dịch và không được tự tính số. Hỏi nhanh về doanh thu/lãi/đơn trung bình trả lời trực tiếp bằng code.
 - Xuất CSV đúng kỳ và bộ lọc đang xem; dữ liệu được bảo vệ khỏi công thức spreadsheet. Có link tra giá nông sản công khai, nhưng ứng dụng không tự đổi hay đề xuất giá bán.
 - Dockerfile cho Cloud Run và bộ evaluation TTS/public có thể chạy lại tại [`evaluation/`](evaluation/README.md).
@@ -33,10 +33,10 @@ Mở `http://localhost:3000`. Nếu Firebase chưa kết nối, app dùng local 
 
 ## Cấu hình Firebase
 
-1. Tạo Firebase web app, bật Anonymous Authentication và Cloud Firestore.
+1. Tạo Firebase web app, bật Google, Email/Password và Cloud Firestore. Anonymous chỉ cần giữ nếu cần nâng cấp các phiên cũ.
 2. Điền bốn giá trị Firebase web vào `.env.local` theo `.env.example`.
 3. Deploy [`firestore.rules`](firestore.rules).
-4. Kiểm tra bằng hai cửa sổ ẩn danh để bảo đảm hai UID không đọc dữ liệu của nhau.
+4. Verify with two clean browser profiles after signing in to two real accounts; neither UID may read the other account data.
 
 Firebase web config là cấu hình public. Service-account JSON, Application Default Credentials và Gemini API key không phải public và không được commit.
 
@@ -80,7 +80,7 @@ Bản demo công khai dùng Vercel Hobby, không yêu cầu Google Cloud Billing
 ## Giới hạn công bố
 
 - Voice chỉ hỗ trợ một giao dịch mỗi audio và chưa có benchmark giọng người thật.
-- Chưa hỗ trợ ảnh/hóa đơn, chữ viết tay, tồn kho, thuế, công nợ, nhiều cửa hàng hoặc nhân viên.
+- Ảnh hóa đơn in rõ là luồng beta; chữ viết tay vẫn giới hạn. Tồn kho, công nợ và thuế là công cụ ghi nhận/tham khảo, chưa thay thế kế toán hoặc hỗ trợ nhiều cửa hàng/nhân viên.
 - Mục tiêu và “Việc cần làm” hỗ trợ theo dõi, không phải dự báo hay cam kết tăng doanh thu.
 - Giá công khai phụ thuộc mặt hàng, khu vực và thời điểm; người bán phải tự quyết định giá thực tế.
 

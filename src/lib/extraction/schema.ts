@@ -14,15 +14,17 @@ export class ExtractionValidationError extends Error {
 }
 
 export const extractionDraftsSchema = z.array(transactionDraftSchema).max(1);
+export const imageExtractionDraftsSchema = z.array(transactionDraftSchema).max(20);
 export const extractionResponseSchema = z.object({ drafts: extractionDraftsSchema });
 
 const nullableStringSchema = { type: "string", nullable: true };
 const nullableNumberSchema = { type: "number", nullable: true };
 
-export const transactionDraftsJsonSchema = {
+function createTransactionDraftsJsonSchema(maxItems: number) {
+  return {
   type: "array",
   minItems: 0,
-  maxItems: 1,
+  maxItems,
   items: {
     type: "object",
     properties: {
@@ -54,7 +56,11 @@ export const transactionDraftsJsonSchema = {
       "warnings",
     ],
   },
-} as const;
+  } as const;
+}
+
+export const transactionDraftsJsonSchema = createTransactionDraftsJsonSchema(1);
+export const imageTransactionDraftsJsonSchema = createTransactionDraftsJsonSchema(20);
 
 function mergeUnique(values: string[], additions: string[]): string[] {
   return [...new Set([...values, ...additions])];
@@ -105,6 +111,15 @@ export function parseExtractionDrafts(value: unknown, currentDate: string): Tran
   const drafts = extractionDraftsSchema.safeParse(value);
   if (!drafts.success) {
     throw new ExtractionValidationError("Gemini trả dữ liệu không đúng cấu trúc giao dịch.");
+  }
+
+  return drafts.data.map((draft) => requireReview(draft, currentDate));
+}
+
+export function parseImageExtractionDrafts(value: unknown, currentDate: string): TransactionDraft[] {
+  const drafts = imageExtractionDraftsSchema.safeParse(value);
+  if (!drafts.success) {
+    throw new ExtractionValidationError("Gemini trả dữ liệu hóa đơn không đúng cấu trúc giao dịch.");
   }
 
   return drafts.data.map((draft) => requireReview(draft, currentDate));

@@ -1,4 +1,5 @@
 import type { ConfirmedTransaction } from "@/types/transaction";
+import { scopedStorageKey } from "@/lib/storage-scope";
 
 export interface TransactionRepository {
   readonly kind: "local" | "firebase";
@@ -20,8 +21,14 @@ function sortTransactions(transactions: ConfirmedTransaction[]): ConfirmedTransa
 export class LocalTransactionRepository implements TransactionRepository {
   readonly kind = "local" as const;
 
+  private readonly storageKey: string;
+
+  constructor(scope?: string | null) {
+    this.storageKey = scopedStorageKey(LOCAL_STORAGE_KEY, scope);
+  }
+
   async list(): Promise<ConfirmedTransaction[]> {
-    const raw = window.localStorage.getItem(LOCAL_STORAGE_KEY);
+    const raw = window.localStorage.getItem(this.storageKey);
     if (!raw) {
       return [];
     }
@@ -38,15 +45,15 @@ export class LocalTransactionRepository implements TransactionRepository {
     const existing = await this.list();
     const next = existing.filter((item) => item.id !== transaction.id);
     next.push(transaction);
-    window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(sortTransactions(next)));
+    window.localStorage.setItem(this.storageKey, JSON.stringify(sortTransactions(next)));
   }
 
   async remove(id: string): Promise<void> {
     const next = (await this.list()).filter((transaction) => transaction.id !== id);
-    window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(next));
+    window.localStorage.setItem(this.storageKey, JSON.stringify(next));
   }
 
   async clear(): Promise<void> {
-    window.localStorage.removeItem(LOCAL_STORAGE_KEY);
+    window.localStorage.removeItem(this.storageKey);
   }
 }

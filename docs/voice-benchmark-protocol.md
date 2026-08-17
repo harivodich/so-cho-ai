@@ -31,7 +31,7 @@ node evaluation/scripts/score-results.mjs `
 node evaluation/scripts/publish-audio-negative-report.mjs
 ```
 
-The runner creates and deletes an anonymous Firebase session and uses the same `/api/extract` boundary as the product. It does not retry requests automatically.
+The runner requires `VOICE_EVAL_ID_TOKEN` from a real Firebase account and uses the same `/api/extract` boundary as the product. It never creates or deletes an anonymous account and does not retry requests automatically.
 
 ## Published run: 14/08/2026
 

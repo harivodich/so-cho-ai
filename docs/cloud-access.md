@@ -4,10 +4,10 @@
 
 1. Tạo project riêng cho Sổ Chợ AI.
 2. Liên kết billing account.
-3. Bật Cloud Run Admin API (un.googleapis.com) trước deploy đầu tiên.
+3. Bật Cloud Run Admin API (run.googleapis.com) trước deploy đầu tiên.
 4. Tạo cảnh báo ngân sách 100.000 VND ở 50%, 90% và 100%.
 5. Cấp IAM cho tài khoản Google của người phát triển; không chia sẻ mật khẩu, OTP hoặc thông tin thẻ.
-6. Bật Firebase Authentication (Anonymous) và Firestore.
+6. Bật Firebase Authentication (Google và Email/Password), Firestore và Authorized domains; không bật Anonymous cho phiên mới.
 
 ## Cấu hình triển khai MVP
 
@@ -59,6 +59,6 @@ Tạo Secret Manager secret `so-cho-ai-gemini-api-key` trước khi deploy. Sau 
 gcloud run deploy so-cho-ai --project sochoai --source . --region asia-southeast1 --allow-unauthenticated --min-instances 0 --max-instances 1 --service-account so-cho-ai-runtime@sochoai.iam.gserviceaccount.com --set-secrets GEMINI_API_KEY=so-cho-ai-gemini-api-key:latest --set-env-vars "GOOGLE_CLOUD_PROJECT=sochoai,GEMINI_MODEL=gemini-2.5-flash,NEXT_PUBLIC_FIREBASE_API_KEY=REPLACE_ME,NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=REPLACE_ME,NEXT_PUBLIC_FIREBASE_PROJECT_ID=sochoai,NEXT_PUBLIC_FIREBASE_APP_ID=REPLACE_ME"
 ```
 
-Sau khi deploy, mở URL trả về trong cửa sổ ẩn danh. Xác nhận `/api/firebase-config` trả `configured: true`, Anonymous Authentication tạo UID, Firestore rules cô lập profile trình duyệt thứ hai, lưu tay hoạt động, và bearer token thiếu/không hợp lệ nhận `401` từ cả hai AI API.
+Sau khi deploy, mở URL trả về và đăng nhập bằng hai tài khoản thật. Xác nhận `/api/firebase-config` trả `configured: true`, Firestore rules cô lập hai UID, lưu tay hoạt động, và bearer token thiếu/không hợp lệ nhận `401` từ cả hai AI API.
 
 Tham chiếu chính thức: [Cloud Run service identity](https://cloud.google.com/run/docs/securing/service-identity), [Cloud Run source deployment](https://cloud.google.com/run/docs/deploying-source-code) và [Firebase Admin SDK với Application Default Credentials](https://firebase.google.com/docs/admin/setup).

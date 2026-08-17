@@ -9,10 +9,10 @@ import type { SevenDayEvidence } from "@/lib/insights/seven-day";
 import type { DailyReport } from "@/lib/reports";
 
 type QuickQuestion = "revenue" | "profit" | "average";
-type Props = { evidence: SevenDayEvidence; report: DailyReport; getIdToken: () => Promise<string> };
+type Props = { evidence: SevenDayEvidence; report: DailyReport; getIdToken: () => Promise<string>; aiEnabled?: boolean };
 type InsightResponse = { insight?: DailyInsightData; error?: unknown };
 
-export function DailyInsight({ evidence, report, getIdToken }: Props) {
+export function DailyInsight({ evidence, report, getIdToken, aiEnabled = true }: Props) {
   const [insight, setInsight] = useState<DailyInsightData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,11 +70,12 @@ export function DailyInsight({ evidence, report, getIdToken }: Props) {
           <h3 id="daily-insight-title">Nhận xét cuối ngày</h3>
           <p>AI chỉ diễn giải số tổng hợp do ứng dụng tính; không nhận dữ liệu từng giao dịch.</p>
         </div>
-        <button type="button" onClick={() => void requestInsight()} disabled={isLoading || report.transactionCount === 0}>
+        <button type="button" onClick={() => void requestInsight()} disabled={!aiEnabled || isLoading || report.transactionCount === 0} title={!aiEnabled ? "Đăng nhập Google hoặc Email để dùng tính năng AI." : undefined}>
           <UiIcon name="chart" size={18} /> {isLoading ? "Đang nhận xét…" : insight ? "Tạo lại" : "Nhận xét bằng AI"}
         </button>
       </div>
-      {report.transactionCount === 0 ? <p className="daily-insight-empty">Cần ít nhất một giao dịch đã xác nhận để tạo nhận xét.</p> : null}
+      {!aiEnabled ? <p className="daily-insight-empty">Đăng nhập Google hoặc Email để dùng nhận xét AI; các câu hỏi nhanh vẫn dùng được từ số liệu đã tính.</p> : null}
+      {aiEnabled && report.transactionCount === 0 ? <p className="daily-insight-empty">Cần ít nhất một giao dịch đã xác nhận để tạo nhận xét.</p> : null}
       {error ? <p className="form-error" role="alert"><UiIcon name="alert" size={18} /> {error}</p> : null}
       <section className="insight-evidence" aria-label="Căn cứ nhận xét 7 ngày">
         <strong>Căn cứ 7 ngày gần nhất</strong>

@@ -57,6 +57,7 @@ Benchmark public đang dùng Google FLEURS `vi_vn` (CC-BY-4.0) làm **negative c
 ```powershell
 node evaluation/scripts/download-fleurs-vi-negative.mjs --limit 30 --scan-limit 198
 node evaluation/scripts/build-fleurs-clear-noisy-manifest.mjs --pairs 15 --snr-db 20
+$env:VOICE_EVAL_ID_TOKEN="<Firebase ID token cua tai khoan that>"
 node evaluation/scripts/run-audio-eval.mjs --manifest evaluation/manifests/fleurs-vi-negative-clear-noisy.jsonl --output evaluation/results/fleurs-vi-negative-clear-noisy-run.jsonl --base-url http://127.0.0.1:3102 --limit 30
 node evaluation/scripts/score-results.mjs --expected evaluation/manifests/fleurs-vi-negative-clear-noisy.jsonl --actual evaluation/results/fleurs-vi-negative-clear-noisy-run.jsonl --report evaluation/results/fleurs-vi-negative-clear-noisy-report.json
 node evaluation/scripts/publish-audio-negative-report.mjs --source evaluation/results/fleurs-vi-negative-clear-noisy-report.json --output public/evaluation/fleurs-vi-negative-clear-noisy-latest.json

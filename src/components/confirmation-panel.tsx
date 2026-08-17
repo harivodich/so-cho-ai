@@ -50,6 +50,7 @@ export function ConfirmationPanel({ draft, isSaving, onEdit, onSave }: Props) {
         <div><dt>Số lượng</dt><dd>{draft.quantity ? `${draft.quantity} ${draft.unit ?? ""}`.trim() : "—"}</dd></div>
         <div><dt>Đơn giá</dt><dd>{draft.unitPrice ? formatVnd(draft.unitPrice) : "—"}</dd></div>
         <div className="summary-total"><dt>Tổng tiền</dt><dd>{draft.amount ? formatVnd(draft.amount) : "—"}</dd></div>
+        {draft.tax ? <div><dt>Thuế</dt><dd>{draft.tax.applied ? draft.tax.taxRatePercent + "% · " + formatVnd(draft.tax.taxAmount) + " · tổng " + formatVnd(draft.tax.total) : "Không áp dụng"}</dd></div> : null}
         <div><dt>Ngày giao dịch</dt><dd>{draft.occurredAt ? formatVietnameseDate(draft.occurredAt) : "—"}</dd></div>
       </dl>
 

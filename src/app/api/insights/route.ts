@@ -15,7 +15,11 @@ async function authenticatedUserId(request: Request): Promise<string | NextRespo
   const token = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
   if (!token) return errorResponse("Bạn cần đăng nhập để dùng nhận xét AI.", 401);
   try {
-    return (await getFirebaseAdminAuth().verifyIdToken(token, true)).uid;
+    const decoded = await getFirebaseAdminAuth().verifyIdToken(token, true);
+    if (decoded.firebase?.sign_in_provider === "anonymous") {
+      return errorResponse("Hãy đăng nhập tài khoản thật trước khi dùng nhận xét AI.", 403);
+    }
+    return decoded.uid;
   } catch (error) {
     const code = typeof error === "object" && error && "code" in error ? String(error.code) : "";
     if (code.startsWith("auth/")) {

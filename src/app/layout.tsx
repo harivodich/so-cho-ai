@@ -19,6 +19,7 @@ const beVietnamPro = Be_Vietnam_Pro({
 
 export const metadata: Metadata = {
   title: "Sổ Chợ AI",
+  manifest: "/manifest.webmanifest",
   description: "Sổ thu chi voice-first cho người bán nhỏ.",
 };
 
