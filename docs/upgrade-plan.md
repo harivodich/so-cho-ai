@@ -89,6 +89,7 @@ Cổng: tài khoản A không thấy mục tiêu, đối tác hoặc dữ liệu
 - External Firebase readback on 2026-08-17 confirms Email/Password and Google providers enabled, authorized domains `localhost`, `sochoai.firebaseapp.com`, `sochoai.web.app`, and `so-cho-ai-tau.vercel.app`, plus the published `cloud.firestore` Rules release.
 - Deployed Rules simulator on the live ruleset passed 14 cross-UID cases (`SUCCESS`): owner reads/profile/settings, creates and updates across all five data collections are allowed; mismatched-owner writes and cross-UID reads/deletes are denied; the run performed no writes.
 - Google Cloud readback confirms the server service account `so-cho-ai-vercel` exists and is enabled with `roles/datastore.user` and `roles/firebaseauth.admin`; Vercel secret wiring still needs an authenticated production delete smoke.
+- Local Chrome QA also passed a device-scope offline smoke (draft → confirm → save while offline → reconnect/reload); authenticated Firebase outbox retry still needs a real-account browser run.
 
 ### Cổng còn mở trước khi gọi là hoàn tất
 
