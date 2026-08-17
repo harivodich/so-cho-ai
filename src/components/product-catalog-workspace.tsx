@@ -31,9 +31,9 @@ export function ProductCatalogWorkspace({ products, movements, transactions, asO
     try {
       await onSaveProduct({ name, defaultUnit: unit, lowStockThreshold: Number(threshold) });
       setName("");
-      setMessage("Da luu san pham.");
+      setMessage("Đã lưu sản phẩm.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Khong the luu san pham.");
+      setMessage(error instanceof Error ? error.message : "Không thể lưu sản phẩm.");
     }
   }
 
@@ -41,39 +41,39 @@ export function ProductCatalogWorkspace({ products, movements, transactions, asO
     event.preventDefault();
     const product = products.find((item) => item.id === selectedProductId);
     if (!product) {
-      setMessage("Chon san pham truoc khi dieu chinh.");
+      setMessage("Chọn sản phẩm trước khi điều chỉnh.");
       return;
     }
     try {
       await onAddAdjustment({ product, quantityDelta: Number(delta), reason, occurredAt: asOfDate });
       setDelta("");
       setReason("");
-      setMessage("Da ghi dieu chinh ton co ly do.");
+      setMessage("Đã ghi điều chỉnh tồn có lý do.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Khong the dieu chinh ton.");
+      setMessage(error instanceof Error ? error.message : "Không thể điều chỉnh tồn.");
     }
   }
 
   return (
     <section className="catalog-workspace" aria-labelledby="catalog-title">
-      <div className="inventory-heading"><div><span className="eyebrow">DANH MUC HANG</span><h2 id="catalog-title">San pham va dieu chinh ton</h2><p>Khong tu quy doi don vi. Moi dieu chinh ton phai co ly do.</p></div></div>
+      <div className="inventory-heading"><div><span className="eyebrow">DANH MỤC HÀNG</span><h2 id="catalog-title">Sản phẩm và điều chỉnh tồn</h2><p>Không tự quy đổi đơn vị. Mỗi điều chỉnh tồn phải có lý do.</p></div></div>
       <div className="catalog-forms">
         <form className="catalog-form" onSubmit={(event) => void submitProduct(event)}>
-          <h3>San pham moi</h3>
-          <label><span>Ten mat hang</span><input value={name} onChange={(event) => setName(event.target.value)} placeholder="Xoai cat" required /></label>
-          <label><span>Don vi mac dinh</span><input value={unit} onChange={(event) => setUnit(event.target.value)} placeholder="kg" required /></label>
-          <label><span>Canh bao khi con lai &lt;=</span><input type="number" min="0" step="0.01" value={threshold} onChange={(event) => setThreshold(event.target.value)} /></label>
-          <button className="primary-button" type="submit">Luu san pham</button>
+          <h3>Sản phẩm mới</h3>
+          <label><span>Tên mặt hàng</span><input value={name} onChange={(event) => setName(event.target.value)} placeholder="Xoài cát" required /></label>
+          <label><span>Đơn vị mặc định</span><input value={unit} onChange={(event) => setUnit(event.target.value)} placeholder="kg" required /></label>
+          <label><span>Cảnh báo khi còn lại &lt;=</span><input type="number" min="0" step="0.01" value={threshold} onChange={(event) => setThreshold(event.target.value)} /></label>
+          <button className="primary-button" type="submit">Lưu sản phẩm</button>
         </form>
         <form className="catalog-form" onSubmit={(event) => void submitAdjustment(event)}>
-          <h3>Dieu chinh ton</h3>
-          <label><span>San pham</span><select value={selectedProductId} onChange={(event) => setSelectedProductId(event.target.value)} required><option value="">Chon san pham</option>{products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</select></label>
-          <label><span>So luong thay doi (+/-)</span><input type="number" step="0.01" value={delta} onChange={(event) => setDelta(event.target.value)} placeholder="-2" required /></label>
-          <label><span>Ly do</span><input value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Kiem ke thuc te" required /></label>
-          <button className="secondary-button" type="submit">Ghi dieu chinh</button>
+          <h3>Điều chỉnh tồn</h3>
+          <label><span>Sản phẩm</span><select value={selectedProductId} onChange={(event) => setSelectedProductId(event.target.value)} required><option value="">Chọn sản phẩm</option>{products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</select></label>
+          <label><span>Số lượng thay đổi (+/-)</span><input type="number" step="0.01" value={delta} onChange={(event) => setDelta(event.target.value)} placeholder="-2" required /></label>
+          <label><span>Lý do</span><input value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Kiểm kê thực tế" required /></label>
+          <button className="secondary-button" type="submit">Ghi điều chỉnh</button>
         </form>
       </div>
-      {products.length > 0 ? <div className="catalog-stock-list">{report.rows.filter((row) => row.productId !== null).map((row) => <div className="catalog-stock-item" key={row.key}><span><strong>{row.itemName}</strong><small>{row.unit ?? ""}</small></span><b className={row.stockQuantity < 0 ? "inventory-negative" : row.isLow ? "inventory-low" : undefined}>{row.stockQuantity.toLocaleString("vi-VN")}</b><small>{row.estimatedStockValue === null ? "Chua co gia nhap" : formatVnd(row.estimatedStockValue)}</small></div>)}</div> : <p className="inventory-empty">Chua co san pham. Bao cao van suy ra mat hang tu giao dich.</p>}
+      {products.length > 0 ? <div className="catalog-stock-list">{report.rows.filter((row) => row.productId !== null).map((row) => <div className="catalog-stock-item" key={row.key}><span><strong>{row.itemName}</strong><small>{row.unit ?? ""}</small></span><b className={row.stockQuantity < 0 ? "inventory-negative" : row.isLow ? "inventory-low" : undefined}>{row.stockQuantity.toLocaleString("vi-VN")}</b><small>{row.estimatedStockValue === null ? "Chưa có giá nhập" : formatVnd(row.estimatedStockValue)}</small></div>)}</div> : <p className="inventory-empty">Chưa có sản phẩm. Báo cáo vẫn suy ra mặt hàng từ giao dịch.</p>}
       {message ? <p className="form-error" role="status">{message}</p> : null}
     </section>
   );

@@ -392,7 +392,7 @@ export default function HomePage() {
           <UiIcon name="info" size={19} />
           <div>
             <strong>Đang lưu cục bộ</strong>
-            <p>{error ? "Không thể kết nối Firebase. Giao dịch hiện chỉ được giữ trong trình duyệt này." : "Firebase chưa được cấu hình. Giao dịch hiện chỉ được giữ trong trình duyệt này."} Đừng xóa dữ liệu trình duyệt nếu còn cần các giao dịch này.</p>
+            <p>{!auth.isConfigured ? (error ? "Không thể kết nối Firebase. Giao dịch hiện chỉ được giữ trong trình duyệt này." : "Firebase chưa được cấu hình. Giao dịch hiện chỉ được giữ trong trình duyệt này.") : !auth.user ? "Bạn chưa đăng nhập. Giao dịch đang được giữ trên thiết bị này; đăng nhập để đồng bộ lên Firebase." : "Không thể kết nối Firebase. Giao dịch hiện chỉ được giữ trong trình duyệt này."} Đừng xóa dữ liệu trình duyệt nếu còn cần các giao dịch này.</p>
           </div>
         </aside>
       ) : null}
