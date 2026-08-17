@@ -87,6 +87,7 @@ Cổng: tài khoản A không thấy mục tiêu, đối tác hoặc dữ liệu
 - OCR: đã có 15 fixture SVG + 15 PNG, runner `npm run eval:ocr` và scorer `npm run score:ocr`. Dry-run hoàn hảo chỉ kiểm tra pipeline; chưa phải accuracy model.
 - Current automated verification: 46 files / 130 tests pass, lint pass, build pass, evidence pass; Firebase reconnect, outbox refresh, account-scoped cache cleanup, and aggregate pending-sync status and partial-save retry idempotency are covered by contract tests; public smoke passes at https://so-cho-ai-tau.vercel.app and local production smoke passes. Firebase Rules release `cloud.firestore` was read back from the Rules API on 2026-08-17; its non-blank normalized SHA-256 (`16dee1d9210a672793ae7ace895d6ba9754c79c8c10bf7bb1a09d341aa5f7fda`) matches the repository file.
 - External Firebase readback on 2026-08-17 confirms Email/Password and Google providers enabled, authorized domains `localhost`, `sochoai.firebaseapp.com`, `sochoai.web.app`, and `so-cho-ai-tau.vercel.app`, plus the published `cloud.firestore` Rules release.
+- Deployed Rules simulator on the live ruleset passed 6 cross-UID cases (`SUCCESS`): owner reads/profile/delete are allowed and another UID is denied; the run performed no writes.
 
 ### Cổng còn mở trước khi gọi là hoàn tất
 
