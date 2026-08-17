@@ -85,11 +85,11 @@ Cổng: tài khoản A không thấy mục tiêu, đối tác hoặc dữ liệu
 - Dashboard: báo cáo ngày/tháng, tồn kho, công nợ, thuế tham khảo và mục tiêu doanh thu đã có công thức/test riêng.
 - Offline: transaction, catalog, debt và mục tiêu có outbox theo scope; cần smoke test thủ công khi tắt mạng.
 - OCR: đã có 15 fixture SVG + 15 PNG, runner `npm run eval:ocr` và scorer `npm run score:ocr`. Dry-run hoàn hảo chỉ kiểm tra pipeline; chưa phải accuracy model.
-- Current automated verification: 46 files / 130 tests pass, lint pass, build pass, evidence pass; Firebase reconnect, outbox refresh, account-scoped cache cleanup, and aggregate pending-sync status and partial-save retry idempotency are covered by contract tests; public smoke passes at https://so-cho-ai-tau.vercel.app and local production smoke passes.
+- Current automated verification: 46 files / 130 tests pass, lint pass, build pass, evidence pass; Firebase reconnect, outbox refresh, account-scoped cache cleanup, and aggregate pending-sync status and partial-save retry idempotency are covered by contract tests; public smoke passes at https://so-cho-ai-tau.vercel.app and local production smoke passes. Firebase Rules release `cloud.firestore` was read back from the Rules API on 2026-08-17; its non-blank normalized SHA-256 (`16dee1d9210a672793ae7ace895d6ba9754c79c8c10bf7bb1a09d341aa5f7fda`) matches the repository file.
 
 ### Cổng còn mở trước khi gọi là hoàn tất
 
-1. Firebase Auth Google/Email và production authorized domain đã được xác nhận bằng đăng nhập thật; còn phải publish firestore.rules.
+1. Firebase Auth Google/Email và production authorized domain đã được xác nhận bằng đăng nhập thật; Firestore Rules đã publish và đã được đọc lại từ Rules API, khớp file local về nội dung.
 2. Vercel Production env, redeploy và public smoke đã pass; Preview env vẫn cần kiểm tra nếu dùng preview URL.
 3. Tạo hai tài khoản thật để kiểm tra cô lập A/B, reload, logout/login, link anonymous, backup/import và xóa tài khoản.
 4. Chạy offline smoke test trên trình duyệt khác.
