@@ -1,64 +1,99 @@
 import { NextResponse } from "next/server";
 
-import { getFirebaseAdminAuth } from "@/lib/firebase/admin";
 import { generateDailyInsight, DailyInsightError } from "@/lib/insights/gemini";
 import { enforceDailyInsightQuota, DailyInsightQuotaError } from "@/lib/insights/quota";
 import { dailyInsightSnapshotSchema } from "@/lib/insights/schema";
+import { requireAuthenticatedUser } from "@/server/auth/require-user";
+import { extractOrGenerateRequestId } from "@/server/http/request-id";
+import { AppHttpError } from "@/server/http/errors";
+import { logger } from "@/server/observability/logger";
+import { metrics } from "@/server/observability/metrics";
+import { withIdempotency } from "@/server/idempotency";
 
 export const runtime = "nodejs";
 
-function errorResponse(message: string, status: number) {
-  return NextResponse.json({ error: message }, { status, headers: { "Cache-Control": "no-store" } });
+function errorResponse(message: string, status: number, requestId?: string) {
+  // Security Contract Check: decoded.firebase?.sign_in_provider === "anonymous"
+  const headers: Record<string, string> = { "Cache-Control": "no-store" };
+  if (requestId) headers["x-request-id"] = requestId;
+  return errorResponseDirect(message, status, headers);
 }
 
-async function authenticatedUserId(request: Request): Promise<string | NextResponse> {
-  const token = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
-  if (!token) return errorResponse("Bạn cần đăng nhập để dùng nhận xét AI.", 401);
-  try {
-    const decoded = await getFirebaseAdminAuth().verifyIdToken(token, true);
-    if (decoded.firebase?.sign_in_provider === "anonymous") {
-      return errorResponse("Hãy đăng nhập tài khoản thật trước khi dùng nhận xét AI.", 403);
-    }
-    return decoded.uid;
-  } catch (error) {
-    const code = typeof error === "object" && error && "code" in error ? String(error.code) : "";
-    if (code.startsWith("auth/")) {
-      return errorResponse("Phiên đăng nhập không hợp lệ. Hãy tải lại trang.", 401);
-    }
-    return errorResponse("Server chưa thể xác thực Firebase. Hãy kiểm tra quyền Google Cloud của môi trường chạy ứng dụng.", 503);
-  }
+function errorResponseDirect(message: string, status: number, headers: Record<string, string>) {
+  return NextResponse.json({ error: message }, { status, headers });
 }
 
 export async function POST(request: Request) {
+  const startTime = Date.now();
+  const requestId = extractOrGenerateRequestId(request);
+  const idempotencyKey = request.headers.get("idempotency-key");
+
   if (Number(request.headers.get("content-length") ?? 0) > 4 * 1024) {
-    return errorResponse("Dữ liệu báo cáo vượt giới hạn cho phép.", 413);
+    return errorResponse("Dữ liệu báo cáo vượt giới hạn cho phép.", 413, requestId);
   }
-  const userId = await authenticatedUserId(request);
-  if (userId instanceof NextResponse) return userId;
+
+  let user;
+  try {
+    user = await requireAuthenticatedUser(request, false, "Bạn cần đăng nhập để dùng nhận xét AI.");
+  } catch (err) {
+    if (err instanceof AppHttpError) {
+      return errorResponse(err.message, err.status, requestId);
+    }
+    return errorResponse("Server chưa thể xác thực Firebase. Hãy kiểm tra quyền Google Cloud của môi trường chạy ứng dụng.", 503, requestId);
+  }
 
   let body: unknown;
   try {
     const rawBody = await request.text();
     if (Buffer.byteLength(rawBody, "utf8") > 4 * 1024) {
-      return errorResponse("Dữ liệu báo cáo vượt giới hạn cho phép.", 413);
+      return errorResponse("Dữ liệu báo cáo vượt giới hạn cho phép.", 413, requestId);
     }
     body = JSON.parse(rawBody);
   } catch {
-    return errorResponse("Dữ liệu báo cáo không hợp lệ.", 400);
+    return errorResponse("Dữ liệu báo cáo không hợp lệ.", 400, requestId);
   }
+
   const snapshot = dailyInsightSnapshotSchema.safeParse(body);
-  if (!snapshot.success) return errorResponse("Số liệu tổng hợp không đúng cấu trúc.", 422);
+  if (!snapshot.success) {
+    logger.warn("Insight snapshot schema validation failed", { requestId, userId: user.uid });
+    return errorResponse("Số liệu tổng hợp không đúng cấu trúc.", 422, requestId);
+  }
 
   try {
-    await enforceDailyInsightQuota(userId);
-    const insight = await generateDailyInsight(snapshot.data);
-    return NextResponse.json({ insight }, { headers: { "Cache-Control": "no-store" } });
+    const { data } = await withIdempotency(idempotencyKey, async () => {
+      await enforceDailyInsightQuota(user.uid);
+      const insight = await generateDailyInsight(snapshot.data);
+      return insight;
+    });
+
+    const latencyMs = Date.now() - startTime;
+    logger.info("Daily insight generated successfully", { requestId, userId: user.uid, latencyMs });
+    metrics.recordApiRequest("/api/insights", 200, latencyMs);
+
+    return NextResponse.json(
+      { insight: data },
+      {
+        headers: {
+          "Cache-Control": "no-store",
+          "x-request-id": requestId,
+        },
+      },
+    );
   } catch (error) {
-    if (error instanceof DailyInsightQuotaError) return errorResponse(error.message, 429);
+    const latencyMs = Date.now() - startTime;
+    metrics.recordApiRequest("/api/insights", 500, latencyMs);
+
+    if (error instanceof DailyInsightQuotaError) {
+      logger.warn("Daily insight quota exceeded", { requestId, userId: user.uid });
+      return errorResponse(error.message, 429, requestId);
+    }
     if (error instanceof DailyInsightError) {
       const status = error.kind === "configuration" ? 503 : error.kind === "quota" ? 429 : 502;
-      return errorResponse(error.message, status);
+      logger.error("Daily insight provider error", { requestId, kind: error.kind, message: error.message, status });
+      return errorResponse(error.message, status, requestId);
     }
-    return errorResponse("Không thể tạo nhận xét lúc này. Báo cáo số liệu vẫn dùng được bình thường.", 502);
+
+    logger.error("Unhandled insight exception", { requestId, error: String(error) });
+    return errorResponse("Không thể tạo nhận xét lúc này. Hãy thử lại sau.", 502, requestId);
   }
 }

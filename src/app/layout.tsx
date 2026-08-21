@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Be_Vietnam_Pro } from "next/font/google";
 
+import "@/styles/tokens.css";
+import "@/styles/motion.css";
 import "./globals.css";
 import "./ui-accessibility.css";
 import "./monthly-dashboard.css";
@@ -36,8 +38,6 @@ export const viewport: Viewport = {
   themeColor: "#0f6b4a",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

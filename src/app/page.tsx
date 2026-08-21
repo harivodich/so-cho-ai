@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 
 import { AccountPanel } from "@/components/account-panel";
+import { AppShell, type AppTab } from "@/components/app-shell";
 import { ProductCatalogWorkspace } from "@/components/product-catalog-workspace";
 import { DebtWorkspace } from "@/components/debt-workspace";
 import { ConfirmationPanel } from "@/components/confirmation-panel";
@@ -67,6 +68,7 @@ function draftFromTransaction(transaction: ConfirmedTransaction): TransactionDra
     tax: transaction.tax,
   };
 }
+
 function newTransactionId(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
@@ -80,12 +82,27 @@ function extractionError(payload: ExtractResponse | null): string | null {
 export default function HomePage() {
   const auth = useAuth();
   const userScope = auth.user?.uid ?? null;
-  const { clear, clearLocalForOwner: clearTransactionLocalForOwner, error, getIdToken, importLocalTransactions, localTransactionCount, persistence, remove, save, syncPending: transactionSyncPending, transactions } = useTransactions(userScope);
+  const {
+    clear,
+    clearLocalForOwner: clearTransactionLocalForOwner,
+    error,
+    getIdToken,
+    importLocalTransactions,
+    localTransactionCount,
+    persistence,
+    remove,
+    save,
+    syncPending: transactionSyncPending,
+    transactions,
+  } = useTransactions(userScope);
+
   const debts = useDebts(userScope);
   const catalog = useCatalog(userScope);
   const counterparties = useCounterparties(userScope);
   const syncPending = transactionSyncPending + debts.syncPending + catalog.syncPending + counterparties.syncPending;
   const localDataCount = localTransactionCount + catalog.localCatalogCount + debts.localDebtCount + counterparties.localCounterpartyCount;
+
+  const [activeTab, setActiveTab] = useState<AppTab>("entry");
   const [view, setView] = useState<View>("home");
   const [draft, setDraft] = useState<TransactionDraft | null>(null);
   const [pendingImageDrafts, setPendingImageDrafts] = useState<TransactionDraft[]>([]);
@@ -99,10 +116,14 @@ export default function HomePage() {
   const backupInputRef = useRef<HTMLInputElement>(null);
 
   const isRealAccount = persistence === "firebase" && Boolean(auth.user && !auth.user.isAnonymous);
-  const aiAccessHint = isRealAccount ? undefined : 'Đăng nhập Google hoặc Email để dùng tính năng AI.';
+  const aiAccessHint = isRealAccount ? undefined : "Đăng nhập Google hoặc Email để dùng tính năng AI.";
   const online = useOnlineStatus();
   const dataError = error ?? debts.error;
 
+  async function handleAccountChange(operation: () => Promise<void>) {
+    await operation();
+    setAccountOpen(false);
+  }
 
   function startManualEntry() {
     setActionError(null);
@@ -111,6 +132,7 @@ export default function HomePage() {
     setPendingImageDrafts([]);
     setDraftInputMethod("manual");
     setView("form");
+    setActiveTab("entry");
   }
 
   function startVoiceEntry() {
@@ -120,6 +142,7 @@ export default function HomePage() {
     setPendingImageDrafts([]);
     setDraftInputMethod("voice");
     setView("voice");
+    setActiveTab("entry");
   }
 
   function startImageEntry() {
@@ -129,11 +152,13 @@ export default function HomePage() {
     setPendingImageDrafts([]);
     setDraftInputMethod("image");
     setView("image");
+    setActiveTab("entry");
   }
 
   function preview(nextDraft: TransactionDraft) {
     setDraft(nextDraft);
     setView("confirm");
+    setActiveTab("entry");
   }
 
   function editTransaction(transaction: ConfirmedTransaction) {
@@ -142,6 +167,7 @@ export default function HomePage() {
     setDraftInputMethod(transaction.inputMethod);
     setDraft(draftFromTransaction(transaction));
     setView("form");
+    setActiveTab("entry");
   }
 
   async function analyzeVoice(audio: File) {
@@ -248,9 +274,7 @@ export default function HomePage() {
     } catch (reason) {
       if (transactionSaved) setEditing(transaction);
       setActionError(
-        transactionSaved
-          ? reason instanceof Error ? `Đã lưu giao dịch nhưng chưa cập nhật tồn kho: ${reason.message}. Hãy thử lại.` : "Đã lưu giao dịch nhưng chưa cập nhật tồn kho. Hãy thử lại."
-          : reason instanceof Error ? `Không thể lưu giao dịch: ${reason.message}` : "Không thể lưu giao dịch.",
+        reason instanceof Error ? `Đã lưu giao dịch nhưng chưa cập nhật tồn kho: ${reason.message}` : "Đã lưu giao dịch nhưng chưa cập nhật tồn kho.",
       );
     } finally {
       setIsSaving(false);
@@ -266,6 +290,7 @@ export default function HomePage() {
     try {
       await remove(transaction.id);
       await catalog.removeTransaction(transaction.id);
+      triggerHapticFeedback(20);
     } catch (reason) {
       setActionError(
         reason instanceof Error ? `Không thể xóa giao dịch: ${reason.message}` : "Không thể xóa giao dịch.",
@@ -273,179 +298,253 @@ export default function HomePage() {
     }
   }
 
-  async function clearData() {
-    if (!window.confirm("Xóa toàn bộ giao dịch trên thiết bị/tài khoản này? Hành động này không thể hoàn tác.")) {
-      return;
-    }
-
-    setActionError(null);
-    try {
-      await clear();
-      clearRevenueGoals(auth.user?.uid ?? null);
-    } catch (reason) {
-      setActionError(
-        reason instanceof Error ? `Không thể xóa giao dịch: ${reason.message}` : "Không thể xóa giao dịch.",
-      );
-    }
-  }
-
-  async function handleAccountChange(operation: () => Promise<void>) {
-    await operation();
-    setAccountOpen(false);
-  }
-
-  function exportBackupFile() {
-    downloadBackup(createBackup(transactions, debts.entries, catalog.products, catalog.movements, counterparties.items), `so-cho-ai-backup-${currentLocalDate()}.json`);
+  function exportBackupData() {
+    const backup = createBackup(
+      transactions,
+      debts.entries,
+      catalog.products,
+      catalog.movements,
+      counterparties.items,
+    );
+    downloadBackup(backup, `so-cho-ai-backup-${currentLocalDate()}.json`);
+    triggerHapticFeedback(15);
   }
 
   async function importBackupFile(file: File) {
+    setActionError(null);
     try {
       const backup = reassignBackupOwner(parseBackup(JSON.parse(await file.text())), userScope ?? "local-device");
       if (!window.confirm(`Nhập ${backup.transactions.length} giao dịch và ${backup.debts.length} khoản công nợ? Dữ liệu trùng mã sẽ được cập nhật.`)) return;
+
       const importedProducts = new Map<string, Awaited<ReturnType<typeof catalog.saveProduct>>>();
       for (const product of backup.products) {
-        const savedProduct = await catalog.saveProduct({ id: product.id, userId: product.userId, name: product.name, defaultUnit: product.defaultUnit, lowStockThreshold: product.lowStockThreshold });
+        const savedProduct = await catalog.saveProduct(product);
         importedProducts.set(product.id, savedProduct);
       }
-      for (const transaction of backup.transactions) {
-        await save(transaction);
-        await catalog.syncTransaction(transaction);
+      for (const t of backup.transactions) {
+        await save(t);
+        await catalog.syncTransaction(t);
       }
-      for (const entry of backup.debts) await debts.save(entry);
-      for (const counterparty of backup.counterparties) await counterparties.remember(counterparty.name);
-      for (const movement of backup.stockMovements.filter((item) => item.kind === "adjustment" && item.sourceTransactionId === null)) {
+      for (const d of backup.debts) await debts.save(d);
+      for (const c of backup.counterparties) await counterparties.remember(c.name);
+      for (const movement of backup.stockMovements.filter((m) => m.kind === "adjustment" && m.sourceTransactionId === null)) {
         const product = importedProducts.get(movement.productId);
-        if (product) await catalog.addAdjustment({ product, quantityDelta: movement.quantityDelta, reason: movement.reason ?? "Nhập từ backup", occurredAt: movement.occurredAt });
+        if (product) {
+          await catalog.addAdjustment({ product, quantityDelta: movement.quantityDelta, reason: movement.reason ?? "Nhập từ backup", occurredAt: movement.occurredAt });
+        }
       }
-      setActionError(null);
-    } catch (reason) {
-      setActionError(reason instanceof Error ? reason.message : "Không thể nhập tệp backup.");
+      triggerHapticFeedback([30, 20, 30]);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Nhập bản sao lưu thất bại.");
     } finally {
       if (backupInputRef.current) backupInputRef.current.value = "";
     }
   }
-  const storageLabel =
-    persistence === "firebase"
-      ? "Đã kết nối Firebase"
-      : persistence === "loading"
-        ? "Đang kết nối Firebase"
-        : "Lưu trên thiết bị";
 
   return (
-    <main className="app-shell">
-      <header className="app-header">
-        <div className="brand-lockup" aria-label="Sổ Chợ AI">
-          <span className="brand-mark"><UiIcon name="book" size={18} /></span>
-          <span>Sổ Chợ AI <small>MVP 0.1</small></span>
-        </div>
-        <div className="header-actions">
-          <div className={persistence === "firebase" ? "storage-status connected" : "storage-status"}>
-            {storageLabel}
+    <AppShell
+      activeTab={activeTab}
+      onTabChange={(tab) => {
+        setActiveTab(tab);
+        if (tab !== "entry") setView("home");
+      }}
+      onQuickVoice={startVoiceEntry}
+      header={
+        <header className="app-header">
+          <div className="brand-lockup">
+            <span className="brand-mark" aria-hidden="true">
+              <UiIcon name="pencil" size={20} />
+            </span>
+            <div>
+              <strong>Sổ Chợ AI</strong>
+              <small>PRO PLATFORM</small>
+            </div>
           </div>
-          <button className="secondary-button account-trigger" type="button" aria-expanded={accountOpen} aria-controls="account-panel" onClick={() => setAccountOpen((value) => !value)}>
-            {auth.user && !auth.user.isAnonymous ? "Tài khoản" : "Đăng nhập"}
-          </button>
-        </div>
-      </header>
 
+          <div className="header-actions">
+            <span className={`storage-status ${persistence === "local" ? "local" : "cloud"}`}>
+              {!online ? "Ngoại tuyến" : persistence === "local" ? "Dữ liệu máy" : syncPending > 0 ? `Đang đồng bộ (${syncPending})` : "Đã đồng bộ"}
+            </span>
+            <button
+              className="text-button account-trigger"
+              type="button"
+              onClick={() => setAccountOpen(!accountOpen)}
+              aria-expanded={accountOpen}
+              aria-controls="account-panel"
+            >
+              <UiIcon name="pencil" size={16} />
+              Tài khoản
+            </button>
+          </div>
+        </header>
+      }
+    >
+      {/* Account Drawer Panel */}
       {accountOpen ? (
-        <AccountPanel
-          error={auth.error}
-          isLoading={auth.isLoading}
-          onDelete={() => handleAccountChange(async () => {
-            const deletedOwner = auth.user?.uid ?? null;
-            await auth.deleteAccount();
-            if (deletedOwner) {
-              await Promise.all([
-                clearTransactionLocalForOwner(deletedOwner),
-                debts.clearLocalForOwner(deletedOwner),
-                catalog.clearLocalForOwner(deletedOwner),
-                counterparties.clearLocalForOwner(deletedOwner),
-              ]);
-              clearRevenueGoals(deletedOwner);
-            }
-          })}
-          onEmail={(email, password, create) => handleAccountChange(() => auth.signInEmail(email, password, create))}
-          onImportLocal={() => handleAccountChange(async () => {
-            await catalog.importLocalCatalog();
-            const imported = await importLocalTransactions();
-            for (const transaction of imported) await catalog.syncTransaction(transaction);
-            await debts.importLocalDebts();
-            await counterparties.importLocalCounterparties();
-          })}
-          localDataCount={localDataCount}
-          localTransactionCount={localTransactionCount}
-          onGoogle={() => handleAccountChange(auth.signInGoogle)}
-          onGoogleExisting={() => handleAccountChange(auth.signInGoogleExisting)}
-          onResetPassword={auth.resetPassword}
-          onVerifyEmail={auth.verifyEmail}
-          onSignOut={() => handleAccountChange(auth.signOut)}
-          user={auth.user}
-        />
+        <div id="account-panel">
+          <AccountPanel
+            error={auth.error}
+            isLoading={auth.isLoading}
+            onDelete={() => handleAccountChange(async () => {
+              const deletedOwner = userScope;
+              await auth.deleteAccount();
+              if (deletedOwner) {
+                await Promise.all([
+                  clearTransactionLocalForOwner(deletedOwner),
+                  debts.clearLocalForOwner(deletedOwner),
+                  catalog.clearLocalForOwner(deletedOwner),
+                  counterparties.clearLocalForOwner(deletedOwner),
+                ]);
+                clearRevenueGoals(deletedOwner);
+              }
+            })}
+            onEmail={(email, password, create) => handleAccountChange(() => auth.signInEmail(email, password, create))}
+            onImportLocal={() => handleAccountChange(async () => {
+              await catalog.importLocalCatalog();
+              const imported = await importLocalTransactions();
+              for (const transaction of imported) await catalog.syncTransaction(transaction);
+              await debts.importLocalDebts();
+              await counterparties.importLocalCounterparties();
+            })}
+            localDataCount={localDataCount}
+            localTransactionCount={localTransactionCount}
+            onGoogle={() => handleAccountChange(auth.signInGoogle)}
+            onGoogleExisting={() => handleAccountChange(auth.signInGoogleExisting)}
+            onResetPassword={auth.resetPassword}
+            onVerifyEmail={auth.verifyEmail}
+            onSignOut={() => handleAccountChange(auth.signOut)}
+            user={auth.user}
+          />
+        </div>
       ) : null}
 
-      <section className="hero" aria-labelledby="page-title">
-        <h1 id="page-title">Ghi sổ gọn.<br />Biết rõ từng khoản.</h1>
-        <p className="hero-copy">Nói hoặc gõ, rồi kiểm tra lại trước khi lưu. Không có giao dịch nào được tự động ghi vào sổ.</p>
-      </section>
-
-      {persistence === "local" ? (
-        <aside className="local-notice">
-          <UiIcon name="info" size={19} />
-          <div>
-            <strong>Đang lưu cục bộ</strong>
-            <p>{!auth.isConfigured ? (error ? "Không thể kết nối Firebase. Giao dịch hiện chỉ được giữ trong trình duyệt này." : "Firebase chưa được cấu hình. Giao dịch hiện chỉ được giữ trong trình duyệt này.") : !auth.user ? "Bạn chưa đăng nhập. Giao dịch đang được giữ trên thiết bị này; đăng nhập để đồng bộ lên Firebase." : "Không thể kết nối Firebase. Giao dịch hiện chỉ được giữ trong trình duyệt này."} Đừng xóa dữ liệu trình duyệt nếu còn cần các giao dịch này.</p>
-          </div>
-        </aside>
+      {/* Global Alerts & Notices */}
+      {dataError ? (
+        <p className="form-error" role="alert">
+          <UiIcon name="alert" size={19} />
+          {dataError}
+        </p>
       ) : null}
-      {dataError || actionError ? <p className="form-error" role="alert"><UiIcon name="alert" size={19} />{actionError ?? dataError}</p> : null}
-      {!online ? <aside className="offline-notice" role="status"><UiIcon name="info" size={18} /><span>Đang offline. Dữ liệu mới sẽ lưu tạm và tự đồng bộ khi có mạng.</span></aside> : null}
-      {syncPending > 0 ? <p className="sync-pending" role="status">Đang chờ đồng bộ {syncPending} thay đổi.</p> : null}
 
-      {view === "home" ? (
-        <>
-          <section className="quick-entry" aria-labelledby="quick-entry-title">
-            <div className="section-heading entry-heading">
-              <div>
-                <h2 id="quick-entry-title">Thêm giao dịch</h2>
-                <p className="section-description">Chọn cách nhập phù hợp nhất với bạn.</p>
+      {actionError ? (
+        <p className="form-error" role="alert">
+          <UiIcon name="alert" size={19} />
+          {actionError}
+        </p>
+      ) : null}
+
+      {!online ? (
+        <p className="offline-notice" role="status">
+          <UiIcon name="alert" size={16} /> Đang ngoại tuyến. Dữ liệu ghi trên máy sẽ tự đồng bộ khi có mạng.
+        </p>
+      ) : null}
+
+      {/* TAB 1: ENTRY HUB */}
+      {activeTab === "entry" ? (
+        <div>
+          {view === "voice" ? (
+            <VoiceTransactionRecorder
+              onAnalyze={analyzeVoice}
+              onCancel={startManualEntry}
+            />
+          ) : view === "image" ? (
+            <ImageTransactionUploader
+              onAnalyze={analyzeImage}
+              onCancel={startManualEntry}
+            />
+          ) : view === "form" ? (
+            <ManualTransactionForm
+              initialDraft={draft}
+              onCancel={() => {
+                setDraft(null);
+                setPendingImageDrafts([]);
+                setEditing(null);
+                setView("home");
+              }}
+              onPreview={preview}
+            />
+          ) : view === "confirm" && draft ? (
+            <ConfirmationPanel
+              draft={draft}
+              isSaving={isSaving}
+              onEdit={() => setView("form")}
+              onSave={() => void confirmSave()}
+            />
+          ) : (
+            <section className="quick-entry" aria-labelledby="quick-entry-title">
+              <div className="section-heading">
+                <div>
+                  <h1 id="quick-entry-title">Ghi chép giao dịch</h1>
+                  <p className="section-description">
+                    Chọn cách thuận tiện nhất: bấm nói bằng giọng nói AI, quét hóa đơn ảnh hoặc tự nhập số liệu.
+                  </p>
+                </div>
+                <span className="review-badge">
+                  <UiIcon name="check" size={15} /> Xác nhận trước khi lưu
+                </span>
               </div>
-            </div>
-            <div className="entry-method-actions">
-              <button className="entry-method entry-method-primary" type="button" onClick={startManualEntry}>
-                <span className="entry-method-icon"><UiIcon name="plus" size={22} /></span>
-                <span><strong>Nhập bằng tay</strong><small>Tự điền số tiền, mặt hàng và ngày giao dịch</small></span>
-                <UiIcon className="entry-method-arrow" name="chevron-right" size={20} />
-              </button>
-              <button
-                className="entry-method"
-                type="button"
-                onClick={startImageEntry}
-                disabled={!isRealAccount}
-                title={aiAccessHint}
-              >
-                <span className="entry-method-icon"><UiIcon name="image" size={21} /></span>
-                <span><strong>Chụp hóa đơn in</strong><small>{isRealAccount ? "Tách từng dòng để bạn kiểm tra" : "Đăng nhập tài khoản để mở"}</small></span>
-                <UiIcon className="entry-method-arrow" name="chevron-right" size={20} />
-              </button>
-              <button
-                className="entry-method"
-                type="button"
-                onClick={startVoiceEntry}
-                disabled={!isRealAccount}
-                title={aiAccessHint}
-              >
-                <span className="entry-method-icon"><UiIcon name="microphone" size={21} /></span>
-                <span><strong>Ghi bằng giọng nói</strong><small>{isRealAccount ? "AI tạo bản nháp để bạn kiểm tra" : "Đăng nhập tài khoản để mở"}</small></span>
-                <UiIcon className="entry-method-arrow" name="chevron-right" size={20} />
-              </button>
-            </div>
-            <p className="trust-note"><UiIcon name="check" size={17} /> Bạn luôn là người xác nhận trước khi giao dịch được lưu.</p>
-          </section>
 
-          <ProductCatalogWorkspace asOfDate={reportFocusDate} movements={catalog.movements} onAddAdjustment={catalog.addAdjustment} onSaveProduct={catalog.saveProduct} products={catalog.products} transactions={transactions} />
-          <ReportWorkspace debts={debts.entries} key={reportFocusDate} focusDate={reportFocusDate} getIdToken={getIdToken} movements={catalog.movements} products={catalog.products} transactions={transactions} userId={isRealAccount ? userScope : null} />
-          <DebtWorkspace userId={userScope} counterpartyNames={counterparties.names} entries={debts.entries} onRememberCounterparty={counterparties.remember} onRemove={debts.remove} onSave={debts.save} />
+              <div className="entry-method-actions">
+                <button
+                  className="entry-method entry-method-primary"
+                  type="button"
+                  onClick={startVoiceEntry}
+                  disabled={Boolean(aiAccessHint)}
+                >
+                  <span className="entry-method-icon" aria-hidden="true">
+                    <UiIcon name="microphone" size={22} />
+                  </span>
+                  <div>
+                    <strong>Nói để ghi sổ</strong>
+                    <small>{aiAccessHint ?? "Bấm và nói: 'Bán 2 ký xoài, 80 nghìn' trong 30 giây."}</small>
+                  </div>
+                  <span className="entry-method-arrow" aria-hidden="true">→</span>
+                </button>
+
+                <button
+                  className="entry-method"
+                  type="button"
+                  onClick={startImageEntry}
+                  disabled={Boolean(aiAccessHint)}
+                >
+                  <span className="entry-method-icon" aria-hidden="true">
+                    <UiIcon name="image" size={20} />
+                  </span>
+                  <div>
+                    <strong>Chụp hóa đơn / Phiếu</strong>
+                    <small>{aiAccessHint ?? "Đọc hóa đơn bán lẻ, biên nhận nhiều dòng thành bản nháp."}</small>
+                  </div>
+                  <span className="entry-method-arrow" aria-hidden="true">→</span>
+                </button>
+
+                <button
+                  className="entry-method"
+                  type="button"
+                  onClick={startManualEntry}
+                >
+                  <span className="entry-method-icon" aria-hidden="true">
+                    <UiIcon name="plus" size={20} />
+                  </span>
+                  <div>
+                    <strong>Tự nhập tay</strong>
+                    <small>Chọn nhanh loại bán/nhập/chi, gợi ý mặt hàng và phím tắt tiền.</small>
+                  </div>
+                  <span className="entry-method-arrow" aria-hidden="true">→</span>
+                </button>
+              </div>
+
+              <div className="trust-note">
+                <UiIcon name="check" size={14} />
+                <span>AI chỉ tạo bản nháp kiểm tra; bạn luôn có quyền chỉnh sửa trước khi lưu vào sổ.</span>
+              </div>
+            </section>
+          )}
+        </div>
+      ) : null}
+
+      {/* TAB 2: LEDGER VIEW */}
+      {activeTab === "ledger" ? (
+        <div>
           <TransactionList
             filter={filter}
             onDelete={deleteTransaction}
@@ -453,53 +552,78 @@ export default function HomePage() {
             onFilterChange={setFilter}
             transactions={transactions}
           />
-          {transactions.length > 0 ? (
-            <button className="danger-button" type="button" onClick={() => void clearData()}>
-              <UiIcon name="trash" size={17} /> Xóa toàn bộ giao dịch của tôi
-            </button>
-          ) : null}
-          <section className="backup-tools" aria-label="Sao lưu dữ liệu">
-            <div><strong>Sao lưu dữ liệu</strong><span>Xuất hoặc nhập lại giao dịch và công nợ bằng tệp JSON.</span></div>
-            <div className="backup-actions">
-              <button className="secondary-button" type="button" onClick={exportBackupFile}>Xuất backup</button>
-              <button className="secondary-button" type="button" onClick={() => backupInputRef.current?.click()}>Nhập backup</button>
-              <input ref={backupInputRef} type="file" accept="application/json,.json" hidden onChange={(event) => { const file = event.target.files?.[0]; if (file) void importBackupFile(file); }} />
+
+          <div className="backup-tools">
+            <div>
+              <strong>Sao lưu & Phục hồi dữ liệu</strong>
+              <span>Xuất dữ liệu an toàn về máy dạng JSON hoặc nhập lại dữ liệu khi đổi thiết bị.</span>
             </div>
-          </section>
-        </>
+            <div className="backup-actions">
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={exportBackupData}
+              >
+                <UiIcon name="book" size={15} /> Xuất sao lưu
+              </button>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => backupInputRef.current?.click()}
+              >
+                <UiIcon name="plus" size={15} /> Nhập sao lưu
+              </button>
+              <input
+                ref={backupInputRef}
+                type="file"
+                accept=".json"
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void importBackupFile(file);
+                }}
+              />
+            </div>
+          </div>
+        </div>
       ) : null}
 
-      {view === "form" ? (
-        <ManualTransactionForm
-          initialDraft={draft}
+      {/* TAB 3: REPORTS & INSIGHTS */}
+      {activeTab === "reports" ? (
+        <ReportWorkspace
+          debts={debts.entries}
+          focusDate={reportFocusDate}
+          getIdToken={getIdToken}
+          movements={catalog.movements}
           products={catalog.products}
           transactions={transactions}
-          onCancel={() => {
-            setDraft(null);
-            setPendingImageDrafts([]);
-            setEditing(null);
-            setView("home");
-          }}
-          onPreview={preview}
+          userId={isRealAccount ? userScope : null}
         />
       ) : null}
 
-      {view === "voice" ? <VoiceTransactionRecorder onAnalyze={analyzeVoice} onCancel={startManualEntry} /> : null}
-      {view === "image" ? <ImageTransactionUploader onAnalyze={analyzeImage} onCancel={startManualEntry} /> : null}
-
-      {view === "confirm" && draft ? (
-        <ConfirmationPanel
-          draft={draft}
-          isSaving={isSaving}
-          onEdit={() => setView("form")}
-          onSave={() => void confirmSave()}
+      {/* TAB 4: INVENTORY & CATALOG */}
+      {activeTab === "inventory" ? (
+        <ProductCatalogWorkspace
+          asOfDate={reportFocusDate}
+          movements={catalog.movements}
+          onAddAdjustment={catalog.addAdjustment}
+          onSaveProduct={catalog.saveProduct}
+          products={catalog.products}
+          transactions={transactions}
         />
       ) : null}
 
-      <footer>
-        <p>Lãi gộp chỉ là ước tính từ các giao dịch bạn đã xác nhận.</p>
-        <p>{formatVietnameseDate(currentLocalDate())}</p>
-      </footer>
-    </main>
+      {/* TAB 5: DEBTS & CASH FLOW */}
+      {activeTab === "debts" ? (
+        <DebtWorkspace
+          userId={userScope}
+          counterpartyNames={counterparties.names}
+          entries={debts.entries}
+          onRememberCounterparty={counterparties.remember}
+          onRemove={debts.remove}
+          onSave={debts.save}
+        />
+      ) : null}
+    </AppShell>
   );
 }

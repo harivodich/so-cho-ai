@@ -2495,3 +2495,147 @@ footer p {
     transform: translateY(0);
   }
 }
+
+
+/* App Shell & Navigation Layout */
+.app-shell-container {
+  width: min(100%, 780px);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 24px 20px 88px;
+}
+
+.app-navigation-bar {
+  margin: 16px 0 24px;
+  position: sticky;
+  top: 12px;
+  z-index: 40;
+}
+
+.app-nav-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-xl);
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-sm);
+  overflow-x: auto;
+}
+
+.app-nav-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 1;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  font-weight: 750;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 180ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.app-nav-tab:hover {
+  color: var(--ink);
+  background: var(--surface-soft);
+}
+
+.app-nav-tab.active {
+  background: linear-gradient(135deg, var(--green-light) 0%, var(--green) 100%);
+  color: #ffffff;
+  box-shadow: 0 3px 10px rgba(15, 107, 74, 0.22);
+}
+
+.app-nav-tab.active svg {
+  color: #ffffff;
+}
+
+/* Mobile Bottom Navigation Bar */
+@media (max-width: 640px) {
+  .app-navigation-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    margin: 0;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--line);
+    border-radius: 0;
+    box-shadow: 0 -4px 20px rgba(20, 34, 25, 0.08);
+    z-index: 100;
+  }
+
+  .app-nav-tabs {
+    border: none;
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .app-nav-tab {
+    flex-direction: column;
+    gap: 3px;
+    min-height: 46px;
+    padding: 4px 6px;
+    font-size: 0.7rem;
+    border-radius: var(--radius-md);
+  }
+
+  .app-shell-container {
+    padding-bottom: 96px;
+  }
+}
+
+/* Floating Quick Voice Button */
+.floating-voice-btn {
+  position: fixed;
+  right: 20px;
+  bottom: 28px;
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--green-light) 0%, var(--green) 100%);
+  color: #ffffff;
+  font-size: 0.88rem;
+  font-weight: 800;
+  box-shadow: 0 8px 24px rgba(15, 107, 74, 0.38);
+  cursor: pointer;
+  transition: all 180ms cubic-bezier(0.4, 0, 0.2, 1);
+  animation: ambientPulse 3.5s ease-in-out infinite;
+}
+
+.floating-voice-btn:hover {
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 12px 30px rgba(15, 107, 74, 0.48);
+}
+
+.floating-voice-btn:active {
+  transform: scale(0.95);
+}
+
+@media (max-width: 640px) {
+  .floating-voice-btn {
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    right: 16px;
+    padding: 10px 16px;
+    font-size: 0.82rem;
+  }
+}
