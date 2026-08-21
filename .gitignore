@@ -14,3 +14,4 @@ evaluation/results/*.jsonl
 evaluation/results/*.json
 evaluation/manifests/common-voice-negative.jsonl
 .vercel/
+*.tsbuildinfo

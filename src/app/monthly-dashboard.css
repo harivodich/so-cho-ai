@@ -25,10 +25,11 @@
 .report-mode-switch {
   display: inline-flex;
   gap: 3px;
-  padding: 3px;
+  padding: 4px;
   border: 1px solid var(--line);
-  border-radius: 11px;
+  border-radius: var(--radius-md);
   background: var(--surface-soft);
+  box-shadow: var(--shadow-sm);
 }
 
 .report-mode-switch button {
@@ -38,13 +39,18 @@
   gap: 5px;
   min-width: 44px;
   min-height: 38px;
-  padding: 7px 10px;
+  padding: 7px 12px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--ink-soft);
   font-size: 0.78rem;
   font-weight: 750;
+  transition: all 180ms ease;
+}
+
+.report-mode-switch button:active {
+  transform: scale(0.97);
 }
 
 .report-mode-switch button:hover {
@@ -78,22 +84,23 @@
 .report-period-input input {
   width: 170px;
   min-height: 40px;
-  padding: 6px 8px;
+  padding: 6px 10px;
   border: 1px solid var(--line-strong);
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius-md);
   background: #fff;
   color: var(--ink);
   font-size: 0.82rem;
   font-weight: 700;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
 }
 
 .monthly-dashboard {
-  margin-bottom: 22px;
+  margin-bottom: 24px;
   padding: clamp(20px, 4vw, 30px);
   border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   background: var(--surface);
-  box-shadow: 0 6px 18px rgba(42, 58, 44, 0.035);
+  box-shadow: var(--shadow);
 }
 
 .monthly-dashboard-header {
@@ -438,18 +445,36 @@
   }
 
   .report-mode-switch {
-    align-self: flex-start;
-  }
+  display: inline-flex;
+  gap: 3px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  box-shadow: var(--shadow-sm);
+}
 
   .report-period-input input {
-    width: 174px;
-  }
+  width: 170px;
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  background: #fff;
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 700;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
 
   .monthly-dashboard {
-    margin-bottom: 16px;
-    padding: 19px 16px;
-    border-radius: 18px;
-  }
+  margin-bottom: 24px;
+  padding: clamp(20px, 4vw, 30px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
 
   .monthly-dashboard-header {
     align-items: stretch;

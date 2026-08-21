@@ -13,6 +13,7 @@ import { TransactionList } from "@/components/transaction-list";
 import { UiIcon } from "@/components/ui-icon";
 import { VoiceTransactionRecorder } from "@/components/voice-transaction-recorder";
 import { currentLocalDate, formatVietnameseDate } from "@/lib/date";
+import { triggerHapticFeedback } from "@/lib/haptic";
 import { applyVoiceConfirmationDefaults } from "@/lib/voice-confirmation-defaults";
 import { clearRevenueGoals } from "@/lib/revenue-goals";
 import { createBackup, downloadBackup, parseBackup, reassignBackupOwner } from "@/lib/backup";
@@ -230,6 +231,7 @@ export default function HomePage() {
     try {
       await save(transaction);
       transactionSaved = true;
+      triggerHapticFeedback([40, 30, 40]);
       await catalog.syncTransaction(transaction);
       setReportFocusDate(transaction.occurredAt);
       if (inputMethod === "image" && pendingImageDrafts.length > 0) {
@@ -470,6 +472,8 @@ export default function HomePage() {
       {view === "form" ? (
         <ManualTransactionForm
           initialDraft={draft}
+          products={catalog.products}
+          transactions={transactions}
           onCancel={() => {
             setDraft(null);
             setPendingImageDrafts([]);

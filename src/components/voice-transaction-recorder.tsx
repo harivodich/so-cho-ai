@@ -242,7 +242,17 @@ export function VoiceTransactionRecorder({ onAnalyze, onCancel }: VoiceTransacti
       {error ? <p className="form-error" role="alert"><UiIcon name="alert" size={19} />{error}</p> : null}
 
       {status === "recording" ? (
-        <div className="voice-status" role="status"><span className="recording-dot" aria-hidden="true" />Đang ghi {formatDuration(elapsedSeconds)} / 00:30</div>
+        <div className="voice-status" role="status">
+          <span className="recording-dot" aria-hidden="true" />
+          <div className="soundwave-bars" aria-hidden="true">
+            <span className="bar bar-1" />
+            <span className="bar bar-2" />
+            <span className="bar bar-3" />
+            <span className="bar bar-4" />
+            <span className="bar bar-5" />
+          </div>
+          <span>Đang ghi {formatDuration(elapsedSeconds)} / 00:30</span>
+        </div>
       ) : null}
 
       {audioUrl ? (

@@ -39,25 +39,38 @@
 .report-filter-grid select {
   width: 100%;
   min-height: 44px;
-  padding: 8px 34px 8px 11px;
+  padding: 8px 34px 8px 12px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--surface);
   color: var(--ink);
   font: inherit;
   font-size: 0.86rem;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
 }
 
 .report-reset-button {
   min-height: 44px;
-  padding: 8px 14px;
+  padding: 8px 16px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--surface-soft);
   color: var(--ink);
   font: inherit;
   font-size: 0.8rem;
   font-weight: 800;
+  box-shadow: var(--shadow-sm);
+  transition: all 180ms ease;
+}
+
+.report-reset-button:not(:disabled):hover {
+  border-color: var(--green);
+  color: var(--green-strong);
+  transform: translateY(-1px);
+}
+
+.report-reset-button:not(:disabled):active {
+  transform: scale(0.97);
 }
 
 .report-reset-button:not(:disabled):hover {
@@ -93,8 +106,28 @@
   }
 
   .report-reset-button {
-    grid-column: 1 / -1;
-  }
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 800;
+  box-shadow: var(--shadow-sm);
+  transition: all 180ms ease;
+}
+
+.report-reset-button:not(:disabled):hover {
+  border-color: var(--green);
+  color: var(--green-strong);
+  transform: translateY(-1px);
+}
+
+.report-reset-button:not(:disabled):active {
+  transform: scale(0.97);
+}
 }
 
 @media (max-width: 560px) {
@@ -121,8 +154,28 @@
   }
 
   .report-reset-button {
-    grid-column: auto;
-  }
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 800;
+  box-shadow: var(--shadow-sm);
+  transition: all 180ms ease;
+}
+
+.report-reset-button:not(:disabled):hover {
+  border-color: var(--green);
+  color: var(--green-strong);
+  transform: translateY(-1px);
+}
+
+.report-reset-button:not(:disabled):active {
+  transform: scale(0.97);
+}
 
   .monthly-kpi-grid > div:nth-child(5) {
     border-radius: 0;

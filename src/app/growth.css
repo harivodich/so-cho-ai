@@ -1,10 +1,10 @@
 .revenue-goal-panel {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
   padding: clamp(20px, 4vw, 30px);
   border: 1px solid var(--green-line);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   background: linear-gradient(145deg, var(--surface) 0%, #f5fbf7 100%);
-  box-shadow: 0 8px 24px rgba(42, 58, 44, 0.045);
+  box-shadow: var(--shadow);
 }
 
 .revenue-goal-heading {
@@ -44,13 +44,14 @@
 
 .goal-status {
   flex: 0 0 auto;
-  padding: 8px 11px;
+  padding: 8px 12px;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--surface);
   color: var(--ink-soft);
   font-size: 0.73rem;
   line-height: 1.35;
+  box-shadow: var(--shadow-sm);
 }
 
 .goal-status.is-achieved {
@@ -95,8 +96,9 @@
 }
 
 .goal-progress-area progress::-webkit-progress-value {
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--green), #20a36d);
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, var(--green) 0%, #20a36d 50%, #34d399 100%);
+  background-size: 200% 100%;
 }
 
 .goal-progress-area progress::-moz-progress-bar {
@@ -260,9 +262,13 @@
 
 @media (max-width: 620px) {
   .revenue-goal-panel {
-    padding: 19px 16px;
-    border-radius: 18px;
-  }
+  margin-bottom: 20px;
+  padding: clamp(20px, 4vw, 30px);
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius-xl);
+  background: linear-gradient(145deg, var(--surface) 0%, #f5fbf7 100%);
+  box-shadow: var(--shadow);
+}
 
   .revenue-goal-heading {
     flex-direction: column;
@@ -270,8 +276,16 @@
   }
 
   .goal-status {
-    align-self: flex-start;
-  }
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-size: 0.73rem;
+  line-height: 1.35;
+  box-shadow: var(--shadow-sm);
+}
 
   .goal-metrics {
     grid-template-columns: 1fr;

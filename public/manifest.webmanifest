@@ -1,11 +1,22 @@
 {
-  "name": "Sổ Chợ AI",
+  "name": "Sổ Chợ AI - Quản lý Thu Chi & Công Nợ",
   "short_name": "Sổ Chợ AI",
-  "description": "Ghi giao dịch, hiểu doanh thu và công nợ cho người bán nhỏ.",
+  "description": "Ghi giao dịch bằng giọng nói, ảnh hóa đơn, hiểu doanh thu và công nợ cho người bán nhỏ.",
   "lang": "vi",
   "start_url": "/",
+  "id": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#f5f3ed",
   "theme_color": "#0f6b4a",
-  "icons": []
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["finance", "business", "productivity"]
 }
