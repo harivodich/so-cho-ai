@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 
 export type ErrorCode =
+  | "BAD_REQUEST"
   | "UNAUTHORIZED"
   | "FORBIDDEN"
+  | "IDEMPOTENCY_KEY_REUSED"
   | "PAYLOAD_TOO_LARGE"
   | "UNPROCESSABLE_ENTITY"
   | "QUOTA_EXCEEDED"
   | "RATE_LIMITED"
   | "AI_PROVIDER_ERROR"
+  | "GATEWAY_TIMEOUT"
   | "SERVICE_UNCONFIGURED"
   | "INTERNAL_SERVER_ERROR";
 
@@ -51,7 +54,7 @@ export function createErrorResponse(
       },
       {
         status: error.status,
-        headers: { "x-request-id": requestId },
+        headers: { "x-request-id": requestId, "Cache-Control": "no-store" },
       },
     );
   }
@@ -67,7 +70,7 @@ export function createErrorResponse(
     },
     {
       status: 500,
-      headers: { "x-request-id": requestId },
+      headers: { "x-request-id": requestId, "Cache-Control": "no-store" },
     },
   );
 }

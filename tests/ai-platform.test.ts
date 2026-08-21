@@ -30,6 +30,7 @@ describe("AI platform contracts & prompt registry", () => {
   });
 
   it("provides model configurations with timeouts and capabilities", () => {
+    expect(MODEL_REGISTRY["gemini-2.5-flash"]).toBeDefined();
     const flashConfig = getModelConfig("gemini-2.5-flash");
     expect(flashConfig.modelName).toBe("gemini-2.5-flash");
     expect(flashConfig.supportsAudio).toBe(true);

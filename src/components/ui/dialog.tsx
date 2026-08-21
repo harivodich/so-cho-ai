@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 import { UiIcon } from "@/components/ui-icon";
 
 type Props = {
@@ -22,6 +22,8 @@ export function AccessibleDialog({
 }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
+  const titleId = useId();
+  const descId = useId();
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -61,14 +63,14 @@ export function AccessibleDialog({
       onClick={(e) => {
         if (e.target === dialogRef.current) onClose();
       }}
-      aria-labelledby="dialog-title"
-      aria-describedby={description ? "dialog-desc" : undefined}
+      aria-labelledby={titleId}
+      aria-describedby={description ? descId : undefined}
     >
       <div className="accessible-modal-content">
         <div className="accessible-modal-header">
           <div>
-            <h2 id="dialog-title" className="accessible-modal-title">{title}</h2>
-            {description ? <p id="dialog-desc" className="accessible-modal-desc">{description}</p> : null}
+            <h2 id={titleId} className="accessible-modal-title">{title}</h2>
+            {description ? <p id={descId} className="accessible-modal-desc">{description}</p> : null}
           </div>
           <button
             type="button"
@@ -76,7 +78,7 @@ export function AccessibleDialog({
             onClick={onClose}
             aria-label="Đóng cửa sổ"
           >
-            <UiIcon name="trash" size={16} />
+            <UiIcon name="x" size={18} />
           </button>
         </div>
         <div className="accessible-modal-body">{children}</div>

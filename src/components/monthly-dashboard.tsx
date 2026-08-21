@@ -208,10 +208,20 @@ export function PeriodDashboard({
                       <g
                         key={day.date}
                         className="chart-bar-group"
-                        style={{ cursor: "pointer" }}
+                        style={{ cursor: "pointer", outline: "none" }}
+                        tabIndex={0}
+                        role="button"
+                        aria-label={`${formatVietnameseDate(day.date)}: ${formatVnd(day.revenue)} (${day.transactionCount} giao dịch)`}
                         onClick={() => {
                           triggerHapticFeedback(15);
                           setActiveDay(isSelected ? null : day);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            triggerHapticFeedback(15);
+                            setActiveDay(isSelected ? null : day);
+                          }
                         }}
                         onMouseEnter={() => setActiveDay(day)}
                         onMouseLeave={() => setActiveDay(null)}

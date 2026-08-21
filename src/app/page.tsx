@@ -13,7 +13,7 @@ import { ReportWorkspace } from "@/components/report-workspace";
 import { TransactionList } from "@/components/transaction-list";
 import { UiIcon } from "@/components/ui-icon";
 import { VoiceTransactionRecorder } from "@/components/voice-transaction-recorder";
-import { currentLocalDate, formatVietnameseDate } from "@/lib/date";
+import { currentLocalDate } from "@/lib/date";
 import { triggerHapticFeedback } from "@/lib/haptic";
 import { applyVoiceConfirmationDefaults } from "@/lib/voice-confirmation-defaults";
 import { clearRevenueGoals } from "@/lib/revenue-goals";
@@ -83,7 +83,6 @@ export default function HomePage() {
   const auth = useAuth();
   const userScope = auth.user?.uid ?? null;
   const {
-    clear,
     clearLocalForOwner: clearTransactionLocalForOwner,
     error,
     getIdToken,
@@ -176,9 +175,13 @@ export default function HomePage() {
     formData.set("mode", "voice");
     formData.set("audio", audio);
 
+    const idempotencyKey = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : undefined;
+    const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+    if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
+
     const response = await fetch("/api/extract", {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
+      headers,
       body: formData,
     });
     const payload = (await response.json().catch(() => null)) as ExtractResponse | null;
@@ -207,9 +210,13 @@ export default function HomePage() {
     formData.set("mode", "image");
     formData.set("image", image);
 
+    const idempotencyKey = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : undefined;
+    const headers: Record<string, string> = { Authorization: "Bearer " + token };
+    if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
+
     const response = await fetch("/api/extract", {
       method: "POST",
-      headers: { Authorization: "Bearer " + token },
+      headers,
       body: formData,
     });
     const payload = (await response.json().catch(() => null)) as ExtractResponse | null;
@@ -349,6 +356,8 @@ export default function HomePage() {
         if (tab !== "entry") setView("home");
       }}
       onQuickVoice={startVoiceEntry}
+      isVoiceDisabled={Boolean(aiAccessHint)}
+      voiceDisabledReason={aiAccessHint}
       header={
         <header className="app-header">
           <div className="brand-lockup">
@@ -455,6 +464,8 @@ export default function HomePage() {
           ) : view === "form" ? (
             <ManualTransactionForm
               initialDraft={draft}
+              products={catalog.products}
+              transactions={transactions}
               onCancel={() => {
                 setDraft(null);
                 setPendingImageDrafts([]);

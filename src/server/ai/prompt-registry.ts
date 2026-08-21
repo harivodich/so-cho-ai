@@ -3,17 +3,17 @@ import { imageExtractionPromptV1 } from "@/server/ai/prompts/image-extraction-v1
 import { dailyInsightPromptV1 } from "@/server/ai/prompts/daily-insight-v1";
 import type { PromptDefinition } from "@/types/ai";
 
-const registry = new Map<string, PromptDefinition<any, any>>();
+const registry = new Map<string, PromptDefinition<unknown, unknown>>();
 
 // Register default prompt versions
-registry.set(textExtractionPromptV2.version, textExtractionPromptV2);
-registry.set(textExtractionPromptV2.id, textExtractionPromptV2); // default for id
+registry.set(textExtractionPromptV2.version, textExtractionPromptV2 as PromptDefinition<unknown, unknown>);
+registry.set(textExtractionPromptV2.id, textExtractionPromptV2 as PromptDefinition<unknown, unknown>);
 
-registry.set(imageExtractionPromptV1.version, imageExtractionPromptV1);
-registry.set(imageExtractionPromptV1.id, imageExtractionPromptV1); // default for id
+registry.set(imageExtractionPromptV1.version, imageExtractionPromptV1 as PromptDefinition<unknown, unknown>);
+registry.set(imageExtractionPromptV1.id, imageExtractionPromptV1 as PromptDefinition<unknown, unknown>);
 
-registry.set(dailyInsightPromptV1.version, dailyInsightPromptV1);
-registry.set(dailyInsightPromptV1.id, dailyInsightPromptV1); // default for id
+registry.set(dailyInsightPromptV1.version, dailyInsightPromptV1 as PromptDefinition<unknown, unknown>);
+registry.set(dailyInsightPromptV1.id, dailyInsightPromptV1 as PromptDefinition<unknown, unknown>);
 
 export const promptRegistry = {
   get<TInput = unknown, TOutput = unknown>(

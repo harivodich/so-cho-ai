@@ -1,6 +1,3 @@
-import type { DataQualityCheck } from "@/lib/extraction/data-quality";
-import type { TransactionDraft } from "@/types/transaction";
-
 export type AiTaskMode = "voice" | "image" | "insight";
 
 export type ExtractionRun = {

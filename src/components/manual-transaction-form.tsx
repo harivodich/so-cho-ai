@@ -197,24 +197,32 @@ export function ManualTransactionForm({ initialDraft, products = [], transaction
       </fieldset>
 
       <div className="item-name-field-container">
-        <label>
+        <label htmlFor="manual-item-name-input">
           <span className="field-label">Tên mặt hàng {type === "expense" ? <em>Không bắt buộc</em> : null}</span>
           <input
+            id="manual-item-name-input"
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={showSuggestions && suggestions.length > 0}
+            aria-controls="item-name-suggestions"
             value={itemName}
             onChange={(event) => {
               setItemName(event.target.value);
               setShowSuggestions(true);
             }}
             onFocus={() => setShowSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
             placeholder={type === "expense" ? "Ví dụ: tiền đá, vận chuyển" : "Ví dụ: xoài Cát Hòa Lộc"}
             autoComplete="off"
           />
         </label>
         {showSuggestions && suggestions.length > 0 ? (
-          <div className="item-autocomplete-dropdown" role="listbox">
+          <div className="item-autocomplete-dropdown" id="item-name-suggestions" role="listbox" aria-label="Gợi ý mặt hàng">
             {suggestions.map((item) => (
               <button
                 type="button"
+                role="option"
+                aria-selected={itemName === item.name}
                 className="autocomplete-item"
                 key={item.name}
                 onMouseDown={(e) => {

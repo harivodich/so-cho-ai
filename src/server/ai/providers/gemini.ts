@@ -77,9 +77,8 @@ export class GeminiProvider implements AiProvider {
         },
       );
     } catch (error) {
-      const latencyMs = Date.now() - startTime;
       if (error instanceof Error && error.name === "TimeoutError") {
-        throw new AppHttpError(504 as any, "AI_PROVIDER_ERROR", `Gemini phản hồi quá thời gian quy định (${params.modelConfig.timeoutMs}ms).`);
+        throw new AppHttpError(504, "GATEWAY_TIMEOUT", `Gemini phản hồi quá thời gian quy định (${params.modelConfig.timeoutMs}ms).`);
       }
       throw new AppHttpError(502, "AI_PROVIDER_ERROR", "Không thể kết nối đến Gemini provider lúc này.");
     }

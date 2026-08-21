@@ -17,9 +17,9 @@ export type LogContext = {
   [key: string]: unknown;
 };
 
-export function hashUserId(uid: string): string {
+export function hashUserId(uid: string | null | undefined): string {
   if (!uid) return "anonymous";
-  return createHash("sha256").update(uid).digest("hex").slice(0, 16);
+  return `usr_${createHash("sha256").update(uid).digest("hex").slice(0, 16)}`;
 }
 
 const SENSITIVE_KEY_PATTERN = /(key|token|secret|password|auth|authorization|credential|audio|image|base64|body)/i;

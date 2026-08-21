@@ -5,7 +5,6 @@ import {
   listDueOutbox,
   listOutbox,
   recordOutboxFailure,
-  removeOutbox,
 } from "@/lib/offline/outbox";
 
 describe("outbox exponential backoff & resilience", () => {

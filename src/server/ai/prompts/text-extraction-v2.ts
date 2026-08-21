@@ -1,4 +1,3 @@
-import { transactionDraftsJsonSchema } from "@/lib/extraction/schema";
 import type { PromptDefinition } from "@/types/ai";
 
 export type TextExtractionPromptInput = {

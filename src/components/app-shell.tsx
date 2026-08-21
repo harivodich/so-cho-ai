@@ -10,6 +10,8 @@ type Props = {
   activeTab: AppTab;
   onTabChange: (tab: AppTab) => void;
   onQuickVoice?: () => void;
+  isVoiceDisabled?: boolean;
+  voiceDisabledReason?: string;
   header?: ReactNode;
   children: ReactNode;
 };
@@ -18,6 +20,8 @@ export function AppShell({
   activeTab,
   onTabChange,
   onQuickVoice,
+  isVoiceDisabled = false,
+  voiceDisabledReason,
   header,
   children,
 }: Props) {
@@ -34,17 +38,16 @@ export function AppShell({
       {/* Top Header */}
       {header}
 
-      {/* Navigation Switcher */}
+      {/* Navigation Switcher with Page-Level Semantics */}
       <nav className="app-navigation-bar" aria-label="Điều hướng chính">
-        <div className="app-nav-tabs" role="tablist">
+        <div className="app-nav-tabs">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
-                role="tab"
                 type="button"
-                aria-selected={isActive}
+                aria-current={isActive ? "page" : undefined}
                 className={`app-nav-tab ${isActive ? "active" : ""}`}
                 onClick={() => {
                   triggerHapticFeedback(15);
@@ -73,8 +76,9 @@ export function AppShell({
             triggerHapticFeedback([30, 20]);
             onQuickVoice();
           }}
-          aria-label="Ghi âm giọng nói nhanh"
-          title="Nói để ghi sổ"
+          disabled={isVoiceDisabled}
+          aria-label={isVoiceDisabled ? (voiceDisabledReason ?? "Cần đăng nhập để dùng voice AI") : "Ghi âm giọng nói nhanh"}
+          title={isVoiceDisabled ? voiceDisabledReason : "Nói để ghi sổ"}
         >
           <UiIcon name="microphone" size={22} />
           <span>Nói</span>

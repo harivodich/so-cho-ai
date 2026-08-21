@@ -1,6 +1,6 @@
 /* Sổ Chợ AI - Motion & Micro-interactions System */
 
-/* Keyframe Animations */
+/* Purposeful Keyframe Animations */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -43,15 +43,7 @@
   }
 }
 
-@keyframes shimmerFlow {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-
+/* Active Recording Waveform (Runs ONLY while recording) */
 @keyframes soundWaveBar {
   0% {
     transform: scaleY(0.25);
@@ -67,15 +59,7 @@
   }
 }
 
-@keyframes ambientPulse {
-  0%, 100% {
-    box-shadow: 0 8px 24px rgba(15, 107, 74, 0.08);
-  }
-  50% {
-    box-shadow: 0 12px 32px rgba(15, 107, 74, 0.2);
-  }
-}
-
+/* Skeleton Loading Shimmer (Runs ONLY during loading) */
 @keyframes skeletonShimmer {
   0% {
     background-position: 200% 0;
@@ -85,7 +69,7 @@
   }
 }
 
-/* Skeleton Loading Style */
+/* Skeleton Loading Primitives */
 .ui-skeleton {
   background: linear-gradient(90deg, #edf1ed 25%, #f5f9f6 50%, #edf1ed 75%);
   background-size: 200% 100%;
@@ -111,13 +95,13 @@
   width: min(92vw, 560px);
   margin: auto;
   overflow: hidden;
-  animation: slideUpFade 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation: slideUpFade 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .accessible-modal-dialog::backdrop {
   background: rgba(20, 34, 25, 0.45);
   backdrop-filter: blur(3px);
-  animation: fadeIn 180ms ease;
+  animation: fadeIn 160ms ease;
 }
 
 .accessible-modal-content {
@@ -150,7 +134,12 @@
   background: transparent;
   border: none;
   color: var(--ink-faint);
-  padding: 6px;
+  padding: 8px;
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 140ms ease;
@@ -168,7 +157,6 @@
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+    transition-duration: 100ms !important;
   }
 }

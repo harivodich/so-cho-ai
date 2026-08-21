@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import { randomUUID } from "node:crypto";
 
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
-import { extractTransactionFromAudio, extractTransactionsFromImage, GeminiRequestError } from "@/lib/extraction/gemini";
 import { ExtractionQuotaError, enforceExtractionQuota, vietnamDateKey } from "@/lib/extraction/quota";
 import { applyDataQualityGuard } from "@/lib/extraction/data-quality";
 import { ExtractionValidationError } from "@/lib/extraction/schema";
@@ -14,18 +12,14 @@ import { AppHttpError } from "@/server/http/errors";
 import { logger } from "@/server/observability/logger";
 import { metrics } from "@/server/observability/metrics";
 import { withIdempotency } from "@/server/idempotency";
-import type { ExtractionRun } from "@/types/ai";
+import { aiApplicationService } from "@/server/ai/service";
 
 export const runtime = "nodejs";
 
 function errorResponse(message: string, status: number, requestId?: string) {
-  // Security Contract Check: decoded.firebase?.sign_in_provider === "anonymous"
+  // Security Contract Assertion: decoded.firebase?.sign_in_provider === "anonymous"
   const headers: Record<string, string> = { "Cache-Control": "no-store" };
   if (requestId) headers["x-request-id"] = requestId;
-  return errorResponseDirect(message, status, headers);
-}
-
-function errorResponseDirect(message: string, status: number, headers: Record<string, string>) {
   return NextResponse.json({ error: message }, { status, headers });
 }
 
@@ -52,10 +46,11 @@ export async function POST(request: Request) {
   const requestId = extractOrGenerateRequestId(request);
   const idempotencyKey = request.headers.get("idempotency-key");
 
-  // Fast pre-parsing check
+  // Fast pre-parsing size check
   const contentLength = Number(request.headers.get("content-length") ?? 0);
   if (Number.isFinite(contentLength) && contentLength > 6 * 1024 * 1024) {
     logger.warn("Payload too large", { requestId, contentLength, status: 413 });
+    metrics.recordApiRequest("/api/extract", 413, Date.now() - startTime);
     return errorResponse("Tệp tải lên vượt giới hạn cho phép.", 413, requestId);
   }
 
@@ -65,8 +60,10 @@ export async function POST(request: Request) {
   } catch (err) {
     if (err instanceof AppHttpError) {
       logger.warn("Authentication failed", { requestId, status: err.status, code: err.code });
+      metrics.recordApiRequest("/api/extract", err.status, Date.now() - startTime);
       return errorResponse(err.message, err.status, requestId);
     }
+    metrics.recordApiRequest("/api/extract", 503, Date.now() - startTime);
     return errorResponse("Không thể xác thực tài khoản trên server lúc này.", 503, requestId);
   }
 
@@ -74,16 +71,19 @@ export async function POST(request: Request) {
   try {
     formData = await request.formData();
   } catch {
+    metrics.recordApiRequest("/api/extract", 400, Date.now() - startTime);
     return errorResponse("Yêu cầu audio không hợp lệ.", 400, requestId);
   }
 
   const mode = formData.get("mode");
   if (mode !== "voice" && mode !== "image") {
+    metrics.recordApiRequest("/api/extract", 400, Date.now() - startTime);
     return errorResponse("Mode trích xuất không hợp lệ.", 400, requestId);
   }
 
   const file = formData.get(mode === "voice" ? "audio" : "image");
   if (!(file instanceof File)) {
+    metrics.recordApiRequest("/api/extract", 400, Date.now() - startTime);
     return errorResponse(mode === "voice" ? "Chưa nhận được file audio." : "Chưa nhận được file ảnh.", 400, requestId);
   }
 
@@ -92,43 +92,40 @@ export async function POST(request: Request) {
     : validateImageUpload(file.size, file.type);
   if (!fileValidation.valid) {
     logger.warn("File validation rejected", { requestId, mode, size: file.size, type: file.type });
+    metrics.recordApiRequest("/api/extract", fileValidation.status, Date.now() - startTime);
     return errorResponse(fileValidation.message, fileValidation.status, requestId);
   }
 
   try {
-    const { data } = await withIdempotency(idempotencyKey, async () => {
-      await enforceExtractionQuota(user.uid);
-      const fileBase64 = Buffer.from(await file.arrayBuffer()).toString("base64");
-      const currentDate = vietnamDateKey(new Date());
+    const fileBytes = await file.arrayBuffer();
+    const fileBase64 = Buffer.from(fileBytes).toString("base64");
 
-      const extraction = mode === "voice"
-        ? extractTransactionFromAudio({ audioBase64: fileBase64, mimeType: file.type, currentDate })
-        : extractTransactionsFromImage({ imageBase64: fileBase64, mimeType: file.type, currentDate });
+    const { data } = await withIdempotency(
+      {
+        userId: user.uid,
+        route: "/api/extract",
+        key: idempotencyKey,
+        payload: { mode, size: file.size, type: file.type },
+      },
+      async () => {
+        await enforceExtractionQuota(user.uid);
+        const currentDate = vietnamDateKey(new Date());
 
-      const [drafts, history] = await Promise.all([
-        extraction,
-        recentTransactionHistory(user.uid),
-      ]);
+        const extractionResult = mode === "voice"
+          ? await aiApplicationService.extractAudio({ audioBase64: fileBase64, mimeType: file.type, currentDate })
+          : await aiApplicationService.extractImage({ imageBase64: fileBase64, mimeType: file.type, currentDate });
 
-      const checkedDrafts = drafts.map((draft) => applyDataQualityGuard(draft, { currentDate, history }));
-      const latencyMs = Date.now() - startTime;
+        const history = await recentTransactionHistory(user.uid);
+        const checkedDrafts = extractionResult.drafts.map((draft) =>
+          applyDataQualityGuard(draft, { currentDate, history }),
+        );
 
-      const runMetadata: ExtractionRun = {
-        runId: randomUUID(),
-        mode,
-        model: process.env.GEMINI_MODEL || "gemini-2.5-flash",
-        promptVersion: mode === "voice" ? "text-extraction-v2" : "image-extraction-v1",
-        latencyMs,
-        draftCount: checkedDrafts.length,
-        qualityCheckCount: checkedDrafts.reduce((acc, d) => acc + (d.qualityChecks?.length || 0), 0),
-        needsReview: checkedDrafts.some((d) => (d.qualityChecks && d.qualityChecks.length > 0) || d.missingFields.length > 0),
-      };
-
-      return {
-        drafts: checkedDrafts,
-        metadata: runMetadata,
-      };
-    });
+        return {
+          drafts: checkedDrafts,
+          metadata: extractionResult.run,
+        };
+      },
+    );
 
     const latencyMs = Date.now() - startTime;
     logger.info("Extraction completed successfully", {
@@ -155,22 +152,24 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     const latencyMs = Date.now() - startTime;
-    metrics.recordApiRequest("/api/extract", 500, latencyMs);
 
     if (error instanceof ExtractionQuotaError) {
       logger.warn("Extraction quota exceeded", { requestId, userId: user.uid, latencyMs });
+      metrics.recordApiRequest("/api/extract", 429, latencyMs);
       return errorResponse(error.message, 429, requestId);
     }
     if (error instanceof ExtractionValidationError) {
       logger.warn("Extraction schema validation error", { requestId, userId: user.uid, latencyMs });
+      metrics.recordApiRequest("/api/extract", 422, latencyMs);
       return errorResponse(error.message, 422, requestId);
     }
-    if (error instanceof GeminiRequestError) {
-      const status = error.kind === "configuration" ? 503 : error.kind === "quota" ? 429 : 502;
-      logger.error("Gemini request error", { requestId, kind: error.kind, message: error.message, status });
-      return errorResponse(error.message, status, requestId);
+    if (error instanceof AppHttpError) {
+      logger.error("AI service error", { requestId, status: error.status, code: error.code, message: error.message });
+      metrics.recordApiRequest("/api/extract", error.status, latencyMs);
+      return errorResponse(error.message, error.status, requestId);
     }
 
+    metrics.recordApiRequest("/api/extract", 502, latencyMs);
     logger.error("Unhandled extraction exception", { requestId, error: String(error) });
     return errorResponse(
       mode === "voice"

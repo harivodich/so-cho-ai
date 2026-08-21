@@ -8,6 +8,7 @@ export type IconName =
   | "chart"
   | "check"
   | "chevron-right"
+  | "close"
   | "expense"
   | "info"
   | "image"
@@ -19,7 +20,8 @@ export type IconName =
   | "stop"
   | "trash"
   | "trend-down"
-  | "trend-up";
+  | "trend-up"
+  | "x";
 
 type Props = SVGProps<SVGSVGElement> & {
   name: IconName;
@@ -56,6 +58,7 @@ export function UiIcon({ name, size = 20, strokeWidth = 1.9, ...props }: Props) 
       {name === "trash" ? <><path {...common} d="M5 7h14M9 7V4h6v3M7 7l.8 13h8.4L17 7M10 11v5M14 11v5" /></> : null}
       {name === "trend-down" ? <><path {...common} d="M5 7.5 10 12l3.2-3L19 15" /><path {...common} d="M15.5 15H19v-3.5" /></> : null}
       {name === "trend-up" ? <><path {...common} d="M5 16.5 10 12l3.2 3L19 9" /><path {...common} d="M15.5 9H19v3.5" /></> : null}
+      {name === "x" || name === "close" ? <path {...common} d="M18 6 6 18M6 6l12 12" /> : null}
     </svg>
   );
 }
