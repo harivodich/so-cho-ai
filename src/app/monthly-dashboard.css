@@ -523,3 +523,32 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Interactive Chart Bar Animations & Hover States */
+.interactive-chart {
+  position: relative;
+  transition: all 200ms ease;
+}
+
+.chart-bar-group {
+  transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1), opacity 160ms ease;
+}
+
+.chart-bar-group:hover {
+  opacity: 0.92;
+  filter: drop-shadow(0 2px 6px rgba(15, 107, 74, 0.3));
+}
+
+.chart-bar-group rect {
+  transition: fill 150ms ease, stroke 150ms ease;
+}
+
+.is-best {
+  animation: bestDayPulse 2s ease-in-out infinite alternate;
+}
+
+@keyframes bestDayPulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.04); }
+}
