@@ -62,6 +62,14 @@ describe("Route Integration: /api/insights", () => {
 
     const res = await POST(req);
     expect(res.status).toBe(401);
+    const body = await res.json();
+    expect(body.error).toEqual(
+      expect.objectContaining({
+        code: "UNAUTHORIZED",
+        message: expect.any(String),
+        requestId: expect.any(String),
+      }),
+    );
   });
 
   it("returns 422 when snapshot schema is invalid", async () => {
@@ -76,6 +84,14 @@ describe("Route Integration: /api/insights", () => {
 
     const res = await POST(req);
     expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.error).toEqual(
+      expect.objectContaining({
+        code: "UNPROCESSABLE_ENTITY",
+        message: expect.stringContaining("Số liệu tổng hợp không đúng cấu trúc"),
+        requestId: expect.any(String),
+      }),
+    );
   });
 
   it("returns 200 with structured AI insight for valid snapshot", async () => {

@@ -16,11 +16,22 @@ import { aiApplicationService } from "@/server/ai/service";
 
 export const runtime = "nodejs";
 
-function errorResponse(message: string, status: number, requestId?: string) {
+function errorResponse(message: string, status: number, requestId?: string, code?: string) {
   // Security Contract Assertion: decoded.firebase?.sign_in_provider === "anonymous"
+  const errCode = code || (status === 400 ? "BAD_REQUEST" : status === 401 ? "UNAUTHORIZED" : status === 403 ? "FORBIDDEN" : status === 409 ? "IDEMPOTENCY_KEY_REUSED" : status === 413 ? "PAYLOAD_TOO_LARGE" : status === 422 ? "UNPROCESSABLE_ENTITY" : status === 429 ? "QUOTA_EXCEEDED" : status === 504 ? "GATEWAY_TIMEOUT" : "INTERNAL_SERVER_ERROR");
   const headers: Record<string, string> = { "Cache-Control": "no-store" };
   if (requestId) headers["x-request-id"] = requestId;
-  return NextResponse.json({ error: message }, { status, headers });
+  return NextResponse.json(
+    {
+      error: {
+        code: errCode,
+        message,
+        requestId: requestId || "unknown",
+      },
+      message,
+    },
+    { status, headers },
+  );
 }
 
 async function recentTransactionHistory(userId: string) {

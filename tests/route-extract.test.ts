@@ -119,7 +119,13 @@ describe("Route Integration: /api/extract", () => {
     const res = await POST(req);
     expect(res.status).toBe(401);
     const body = await res.json();
-    expect(body.error).toBeDefined();
+    expect(body.error).toEqual(
+      expect.objectContaining({
+        code: "UNAUTHORIZED",
+        message: expect.any(String),
+        requestId: expect.any(String),
+      }),
+    );
   });
 
   it("returns 400 when mode is invalid", async () => {
@@ -134,6 +140,14 @@ describe("Route Integration: /api/extract", () => {
 
     const res = await POST(req);
     expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toEqual(
+      expect.objectContaining({
+        code: "BAD_REQUEST",
+        message: expect.any(String),
+        requestId: expect.any(String),
+      }),
+    );
   });
 
   it("returns 200 with structured drafts and metadata for valid voice audio", async () => {
@@ -220,5 +234,13 @@ describe("Route Integration: /api/extract", () => {
       }),
     );
     expect(resB.status).toBe(409);
+    const bodyB = await resB.json();
+    expect(bodyB.error).toEqual(
+      expect.objectContaining({
+        code: "IDEMPOTENCY_KEY_REUSED",
+        message: expect.stringContaining("Khóa Idempotency đã được sử dụng"),
+        requestId: expect.any(String),
+      }),
+    );
   });
 });

@@ -10,6 +10,8 @@ export type IdempotencyRecord<T> = {
   expiresAt: number;
   status: "processing" | "completed" | "failed";
   leaseUntil?: number;
+  lockToken?: string;
+  ownerId?: string;
 };
 
 type InFlightEntry = {
@@ -23,7 +25,10 @@ const memoryInFlight = new Map<string, InFlightEntry>();
 const DEFAULT_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 function isDistributedStoreEnabled(): boolean {
-  if (process.env.NODE_ENV === "test" && !process.env.TEST_DISTRIBUTED_IDEMPOTENCY) {
+  if (process.env.TEST_DISTRIBUTED_IDEMPOTENCY === "true") {
+    return true;
+  }
+  if (process.env.NODE_ENV === "test") {
     return false;
   }
   return Boolean(
@@ -84,28 +89,40 @@ export type IdempotencyOptions = {
   ttlMs?: number;
 };
 
-async function acquireDistributedLock<T>(
+export type LockAcquireResult<T> =
+  | { status: "acquired"; lockToken: string }
+  | { status: "cached"; data: T }
+  | { status: "processing" };
+
+export async function acquireDistributedLock<T>(
   scopedKey: string,
   requestHash: string,
   ttlMs: number,
   leaseMs = 30_000,
-): Promise<{ status: "acquired" } | { status: "cached"; data: T } | { status: "processing" }> {
-  if (!isDistributedStoreEnabled()) return { status: "acquired" };
+): Promise<LockAcquireResult<T>> {
+  if (!isDistributedStoreEnabled()) {
+    const memoryToken = `mem_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    return { status: "acquired", lockToken: memoryToken };
+  }
   try {
     const db = getFirebaseAdminDb();
     const docRef = db.collection("idempotency_records").doc(scopedKey);
     return await db.runTransaction(async (transaction) => {
       const doc = await transaction.get(docRef);
       const now = Date.now();
+      const newLockToken = `tok_${now}_${Math.random().toString(36).slice(2)}`;
+
       if (!doc.exists) {
         transaction.set(docRef, {
           requestHash,
           status: "processing",
+          lockToken: newLockToken,
+          ownerId: newLockToken,
           createdAt: now,
           expiresAt: now + ttlMs,
           leaseUntil: now + leaseMs,
         });
-        return { status: "acquired" };
+        return { status: "acquired", lockToken: newLockToken };
       }
 
       const data = doc.data() as IdempotencyRecord<T>;
@@ -125,57 +142,84 @@ async function acquireDistributedLock<T>(
         return { status: "processing" };
       }
 
-      // Lease expired or previously failed -> acquire lock
+      // Lease expired or failed: safe takeover with new lockToken
       transaction.update(docRef, {
         requestHash,
         status: "processing",
+        lockToken: newLockToken,
+        ownerId: newLockToken,
         leaseUntil: now + leaseMs,
         expiresAt: now + ttlMs,
       });
-      return { status: "acquired" };
+      return { status: "acquired", lockToken: newLockToken };
     });
   } catch (err) {
     if (err instanceof AppHttpError) throw err;
     logger.warn("Distributed idempotency transaction unavailable, falling back to memory mode", {
       error: err instanceof Error ? err.message : String(err),
     });
-    return { status: "acquired" };
+    const fallbackToken = `fb_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    return { status: "acquired", lockToken: fallbackToken };
   }
 }
 
-async function completeDistributedLock<T>(
+export async function completeDistributedLock<T>(
   scopedKey: string,
+  lockToken: string,
   requestHash: string,
   data: T,
   ttlMs: number,
-): Promise<void> {
-  if (!isDistributedStoreEnabled()) return;
+): Promise<boolean> {
+  if (!isDistributedStoreEnabled()) return true;
   try {
     const db = getFirebaseAdminDb();
     const docRef = db.collection("idempotency_records").doc(scopedKey);
-    const now = Date.now();
-    await docRef.set({
-      requestHash,
-      status: "completed",
-      data,
-      createdAt: now,
-      expiresAt: now + ttlMs,
+    return await db.runTransaction(async (transaction) => {
+      const doc = await transaction.get(docRef);
+      if (!doc.exists) return false;
+      const record = doc.data() as IdempotencyRecord<T>;
+      // Stale writer guard: verify lockToken ownership
+      if (record.lockToken && record.lockToken !== lockToken) {
+        logger.warn("Stale worker attempted to complete idempotency record after lease takeover", {
+          scopedKey: scopedKey.slice(0, 16),
+          workerToken: lockToken,
+          currentOwnerToken: record.lockToken,
+        });
+        return false;
+      }
+      const now = Date.now();
+      transaction.update(docRef, {
+        status: "completed",
+        data,
+        completedAt: now,
+        expiresAt: now + ttlMs,
+      });
+      return true;
     });
   } catch (err) {
     logger.warn("Failed to persist completed distributed idempotency record", {
       error: err instanceof Error ? err.message : String(err),
     });
+    return false;
   }
 }
 
-async function failDistributedLock(scopedKey: string): Promise<void> {
+export async function failDistributedLock(scopedKey: string, lockToken?: string): Promise<void> {
   if (!isDistributedStoreEnabled()) return;
   try {
     const db = getFirebaseAdminDb();
     const docRef = db.collection("idempotency_records").doc(scopedKey);
-    await docRef.update({
-      status: "failed",
-      leaseUntil: 0,
+    await db.runTransaction(async (transaction) => {
+      const doc = await transaction.get(docRef);
+      if (!doc.exists) return;
+      const record = doc.data() as IdempotencyRecord<unknown>;
+      if (lockToken && record.lockToken && record.lockToken !== lockToken) {
+        return; // Lease already taken over, do not overwrite
+      }
+      transaction.update(docRef, {
+        status: "failed",
+        leaseUntil: 0,
+      });
     });
   } catch {
     // Non-blocking cleanup
@@ -240,7 +284,7 @@ export async function withIdempotency<T>(
   let isFromCache = false;
   const executionPromise = (async (): Promise<T> => {
     // 3a. Acquire Atomic Distributed Lock via Firestore Transaction if configured
-    const lockResult = await acquireDistributedLock<T>(scopedKey, currentRequestHash, ttlMs);
+    let lockResult = await acquireDistributedLock<T>(scopedKey, currentRequestHash, ttlMs);
     if (lockResult.status === "cached") {
       isFromCache = true;
       memoryCache.set(scopedKey, {
@@ -253,15 +297,40 @@ export async function withIdempotency<T>(
       return lockResult.data;
     }
 
+    // If another instance holds an active lease, poll with bounded backoff
     if (lockResult.status === "processing") {
-      // Another server instance holds the lease: wait for completion or timeout
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      const retryLock = await acquireDistributedLock<T>(scopedKey, currentRequestHash, ttlMs);
-      if (retryLock.status === "cached") {
-        isFromCache = true;
-        return retryLock.data;
+      const maxPollAttempts = 5;
+      const pollDelayMs = 600;
+      for (let attempt = 0; attempt < maxPollAttempts; attempt++) {
+        await new Promise((resolve) => setTimeout(resolve, pollDelayMs));
+        lockResult = await acquireDistributedLock<T>(scopedKey, currentRequestHash, ttlMs);
+        if (lockResult.status === "cached") {
+          isFromCache = true;
+          memoryCache.set(scopedKey, {
+            requestHash: currentRequestHash,
+            data: lockResult.data,
+            createdAt: Date.now(),
+            expiresAt: Date.now() + ttlMs,
+            status: "completed",
+          });
+          return lockResult.data;
+        }
+        if (lockResult.status === "acquired") {
+          break; // Lease expired and was successfully acquired by this instance
+        }
+      }
+
+      // If still processing by another instance, reject cleanly to prevent duplicate execution
+      if (lockResult.status === "processing") {
+        throw new AppHttpError(
+          409,
+          "IDEMPOTENCY_KEY_REUSED",
+          "Yêu cầu tương tự đang được xử lý bởi hệ thống. Vui lòng thử lại sau giây lát.",
+        );
       }
     }
+
+    const acquiredToken = lockResult.status === "acquired" ? lockResult.lockToken : "";
 
     try {
       const data = await operation();
@@ -271,12 +340,13 @@ export async function withIdempotency<T>(
         createdAt: Date.now(),
         expiresAt: Date.now() + ttlMs,
         status: "completed",
+        lockToken: acquiredToken,
       };
       memoryCache.set(scopedKey, completedRecord);
-      await completeDistributedLock(scopedKey, currentRequestHash, data, ttlMs);
+      await completeDistributedLock(scopedKey, acquiredToken, currentRequestHash, data, ttlMs);
       return data;
     } catch (opError) {
-      await failDistributedLock(scopedKey);
+      await failDistributedLock(scopedKey, acquiredToken);
       throw opError;
     }
   })();
