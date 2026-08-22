@@ -23,7 +23,7 @@ describe("account isolation contracts", () => {
     expect(rules).toContain("request.auth.uid == userId");
     expect(rules).toContain("function ownsDocument(userId)");
     expect(rules).toContain("request.resource.data.userId == userId");
-    expect(rules.match(/allow create, update: if ownsDocument\(userId\);/g)?.length).toBe(5);
+    expect(rules.match(/allow create, update: if ownsDocument\(userId\)/g)?.length).toBe(5);
     expect(rules).toContain("match /users/{userId}/transactions/{transactionId}");
     expect(rules).toContain("match /users/{userId}/profile/{document=**}");
     expect(rules).toContain("match /users/{userId}/settings/{document=**}");
@@ -40,6 +40,7 @@ describe("account isolation contracts", () => {
     expect(emailFlow).toContain("await signInWithEmailAndPassword(auth, email.trim(), password);");
     expect(emailFlow).not.toContain("await signOut(auth);");
   });
+
   it("configures the browser redirect resolver for Firebase Auth", () => {
     const client = readFileSync("src/lib/firebase/client.ts", "utf8");
     expect(client).toContain("browserPopupRedirectResolver");

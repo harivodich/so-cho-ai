@@ -115,4 +115,17 @@ describe("Hardened Idempotency & Concurrency Security", () => {
     expect(resUser2.cached).toBe(false);
     expect(resRoute2.cached).toBe(false);
   });
+
+  it("rejects whitespace-only idempotency keys with INVALID_IDEMPOTENCY_KEY error", async () => {
+    clearIdempotencyCache();
+    await expect(
+      withIdempotency(
+        { userId: "user_alpha", route: "/api/extract", key: "   ", payload: { data: 123 } },
+        async () => "result",
+      ),
+    ).rejects.toMatchObject({
+      status: 400,
+      code: "INVALID_IDEMPOTENCY_KEY",
+    });
+  });
 });

@@ -65,7 +65,10 @@ export function isFirebaseAdminConfigured(
   if (Boolean(environment.GOOGLE_APPLICATION_CREDENTIALS?.trim())) {
     return true;
   }
-  if (Boolean(environment.GOOGLE_CLOUD_PROJECT?.trim() || environment.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.trim())) {
+  if (Boolean(environment.FIREBASE_CONFIG?.trim())) {
+    return true;
+  }
+  if (Boolean(environment.GOOGLE_CLOUD_PROJECT?.trim() || environment.GCLOUD_PROJECT?.trim())) {
     return true;
   }
   return false;

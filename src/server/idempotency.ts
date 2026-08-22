@@ -370,9 +370,17 @@ export async function withIdempotency<T>(
         status: "completed",
         lockToken: acquiredToken,
       };
-      memoryCache.set(scopedKey, completedRecord);
-      const isCompleted = await completeDistributedLock(scopedKey, acquiredToken, currentRequestHash, data, ttlMs);
+
+      const isCompleted = await completeDistributedLock(
+        scopedKey,
+        acquiredToken,
+        currentRequestHash,
+        data,
+        ttlMs,
+      );
+
       if (!isCompleted && isDistributedStoreEnabled() && process.env.NODE_ENV === "production") {
+        memoryCache.delete(scopedKey);
         logger.error("Failed to complete idempotency record in distributed store", {
           scopedKey: scopedKey.slice(0, 16),
         });
@@ -382,8 +390,12 @@ export async function withIdempotency<T>(
           "Không thể lưu kết quả kiểm soát giao dịch trùng lặp. Vui lòng thử lại sau.",
         );
       }
+
+      // Only store in memory cache once distributed completion is confirmed
+      memoryCache.set(scopedKey, completedRecord);
       return data;
     } catch (opError) {
+      memoryCache.delete(scopedKey);
       await failDistributedLock(scopedKey, acquiredToken);
       throw opError;
     }

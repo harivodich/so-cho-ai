@@ -179,4 +179,80 @@ describe("Route Integration: /api/insights", () => {
     expect(body.error.code).toBe("INVALID_INSIGHT_INVARIANTS");
     expect(body.error.message).toContain("Lợi nhuận gộp ước tính không thể là null");
   });
+
+  it("returns 422 when estimatedGrossProfit violates revenue minus estimatedCostOfGoods", async () => {
+    const req = new Request("http://localhost/api/insights", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer valid_token",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ...validSnapshot,
+        revenue: 1500000,
+        estimatedCostOfGoods: 800000,
+        estimatedGrossProfit: 200000, // Should be 700000 (1500000 - 800000)
+        missingCostSaleCount: 0,
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.error.code).toBe("INVALID_INSIGHT_INVARIANTS");
+    expect(body.error.message).toContain("Lợi nhuận gộp ước tính không khớp với doanh thu trừ giá vốn");
+  });
+
+  it("returns 422 when saleCount is 0 but averageSaleValue is non-zero", async () => {
+    const req = new Request("http://localhost/api/insights", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer valid_token",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ...validSnapshot,
+        revenue: 0,
+        estimatedCostOfGoods: 0,
+        estimatedGrossProfit: 0,
+        saleCount: 0,
+        averageSaleValue: 50000, // Must be 0 when saleCount is 0
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.error.code).toBe("INVALID_INSIGHT_INVARIANTS");
+    expect(body.error.message).toContain("Giá trị đơn trung bình phải bằng 0 khi không có đơn bán");
+  });
+
+  it("returns 422 when 7-day metric numbers are negative", async () => {
+    const req = new Request("http://localhost/api/insights", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer valid_token",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ...validSnapshot,
+        sevenDay: {
+          startDate: "2026-08-15",
+          endDate: "2026-08-22",
+          todayRevenue: -1000,
+          averageDailyRevenue: 500000,
+          revenueDelta: 0,
+          revenueDeltaPercent: 0,
+          todaySaleCount: 5,
+          averageSaleValue: 100000,
+          missingCostSaleCount: 0,
+          topItemName: "Xoài",
+        },
+      }),
+    });
+
+    // Zod schema catches negative or invariant check catches
+    const res = await POST(req);
+    expect(res.status).toBe(422);
+  });
 });

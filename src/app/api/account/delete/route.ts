@@ -50,12 +50,12 @@ export async function POST(request: Request) {
   try {
     logger.info("Starting account deletion job", { requestId, userId });
     const db = getFirebaseAdminDb();
-    try {
-      await db.recursiveDelete(db.doc("users/" + userId));
-    } catch (dbErr) {
-      logger.warn("Firestore recursive delete warning during account deletion", { userId, error: String(dbErr) });
-    }
+    // Step 1: Wipe all Firestore collections under users/{userId} first.
+    // If this fails, DO NOT delete the Auth user; fail-closed so the user can re-authenticate and retry.
+    await db.recursiveDelete(db.doc("users/" + userId));
 
+    // Step 2: Delete Firebase Auth record.
+    // If the user was already deleted from Auth, treat as successful idempotent completion.
     try {
       await getFirebaseAdminAuth().deleteUser(userId);
     } catch (authErr) {
