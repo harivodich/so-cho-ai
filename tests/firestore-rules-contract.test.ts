@@ -27,14 +27,25 @@ describe("Firestore Security Rules Contract & Safety Analysis", () => {
     expect(rules).toContain("request.resource.data.type in ['sale', 'purchase', 'expense']");
     expect(rules).toContain("request.resource.data.direction in ['receivable', 'payable']");
     expect(rules).toContain("validString(request.resource.data.partyName, 200)");
-    expect(rules).toContain("validNumber(request.resource.data.quantityDelta, -10000000, 10000000)");
-    expect(rules).toContain("request.resource.data.get('defaultUnit', null)");
+    expect(rules).toContain("request.resource.data.quantityDelta is number");
+    expect(rules).toContain("request.resource.data.quantityDelta != 0");
+    expect(rules).toContain("validString(request.resource.data.defaultUnit, 32)");
     expect(rules).toContain("request.resource.data.get('itemName', null)");
   });
 
   it("restricts /idempotency_records to server-only Firebase Admin access", () => {
     expect(rules).toContain("match /idempotency_records/{recordId}");
     expect(rules).toContain("allow read, write: if false;");
+  });
+
+  it("enforces strict field allowlists with keys().hasOnly across all collections", () => {
+    expect(rules).toContain("keys().hasOnly(['id', 'userId', 'inputMethod', 'type', 'itemName'");
+    expect(rules).toContain("keys().hasOnly(['displayName', 'phone', 'email', 'businessName'");
+    expect(rules).toContain("keys().hasOnly(['id', 'userId', 'partyName', 'direction', 'amount'");
+    expect(rules).toContain("keys().hasOnly(['id', 'userId', 'name', 'canonicalName', 'defaultUnit'");
+    expect(rules).toContain("keys().hasOnly(['id', 'userId', 'productId', 'itemName'");
+    expect(rules).toContain("keys().hasOnly(['id', 'userId', 'name', 'createdAt', 'updatedAt'])");
+    expect(rules).toContain("keys().hasOnly(['revenueGoals', 'monthlyRevenueGoal', 'theme', 'updatedAt', 'userId'])");
   });
 
   it("verifies collection scope and ownership", () => {

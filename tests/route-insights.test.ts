@@ -288,4 +288,35 @@ describe("Route Integration: /api/insights", () => {
     expect(body.error.code).toBe("INVALID_INSIGHT_INVARIANTS");
     expect(body.error.message).toContain("Ngày bắt đầu chu kỳ 7 ngày không thể sau ngày kết thúc");
   });
+
+  it("returns 422 when sevenDay duration span is not 6-7 days", async () => {
+    const req = new Request("http://localhost/api/insights", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer valid_token",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ...validSnapshot,
+        sevenDay: {
+          startDate: "2026-08-01", // 21 days span
+          endDate: "2026-08-22",
+          todayRevenue: 1000000,
+          averageDailyRevenue: 500000,
+          revenueDelta: 0,
+          revenueDeltaPercent: 0,
+          todaySaleCount: 5,
+          averageSaleValue: 100000,
+          missingCostSaleCount: 0,
+          topItemName: "Xoài",
+        },
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.error.code).toBe("INVALID_INSIGHT_INVARIANTS");
+    expect(body.error.message).toContain("Chu kỳ so sánh 7 ngày phải có khoảng cách");
+  });
 });

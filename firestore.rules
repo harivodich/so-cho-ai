@@ -16,69 +16,85 @@ service cloud.firestore {
 
     function ownsDocument(userId) {
       return signedInAs(userId)
-        && request.resource.data.userId == userId
-        && request.resource.data.keys().size() <= 30;
+        && request.resource.data.userId == userId;
     }
 
     match /users/{userId}/transactions/{transactionId} {
       allow read: if signedInAs(userId);
       allow create, update: if ownsDocument(userId)
+        && request.resource.data.keys().hasOnly(['id', 'userId', 'inputMethod', 'type', 'itemName', 'canonicalItemName', 'quantity', 'unit', 'unitPrice', 'amount', 'occurredAt', 'confirmedAt', 'createdAt', 'updatedAt', 'fieldsNeedingReview', 'missingFields', 'warnings', 'qualityChecks', 'tax'])
         && validNumber(request.resource.data.amount, 0, 1000000000000)
         && (request.resource.data.type in ['sale', 'purchase', 'expense'])
         && (request.resource.data.get('itemName', null) == null || (request.resource.data.itemName is string && request.resource.data.itemName.size() <= 200))
+        && (request.resource.data.get('canonicalItemName', null) == null || (request.resource.data.canonicalItemName is string && request.resource.data.canonicalItemName.size() <= 200))
         && (request.resource.data.get('unitPrice', null) == null || validNumber(request.resource.data.unitPrice, 0, 1000000000000))
         && (request.resource.data.get('quantity', null) == null || validNumber(request.resource.data.quantity, 0, 10000000))
-        && (request.resource.data.get('unit', null) == null || (request.resource.data.unit is string && request.resource.data.unit.size() <= 50));
+        && (request.resource.data.get('unit', null) == null || (request.resource.data.unit is string && request.resource.data.unit.size() <= 50))
+        && (request.resource.data.get('inputMethod', null) == null || (request.resource.data.inputMethod in ['voice', 'manual', 'image', 'ocr', 'import']));
       allow delete: if signedInAs(userId);
     }
 
     match /users/{userId}/profile/{document=**} {
       allow read: if signedInAs(userId);
       allow write: if signedInAs(userId)
-        && request.resource.data.keys().size() <= 20
+        && request.resource.data.keys().hasOnly(['displayName', 'phone', 'email', 'businessName', 'isAnonymous', 'createdAt', 'updatedAt', 'photoURL', 'userId'])
         && (request.resource.data.get('displayName', null) == null || (request.resource.data.displayName is string && request.resource.data.displayName.size() <= 100))
         && (request.resource.data.get('phone', null) == null || (request.resource.data.phone is string && request.resource.data.phone.size() <= 30))
-        && (request.resource.data.get('email', null) == null || (request.resource.data.email is string && request.resource.data.email.size() <= 200));
+        && (request.resource.data.get('email', null) == null || (request.resource.data.email is string && request.resource.data.email.size() <= 200))
+        && (request.resource.data.get('businessName', null) == null || (request.resource.data.businessName is string && request.resource.data.businessName.size() <= 150));
     }
 
     match /users/{userId}/debts/{debtId} {
       allow read: if signedInAs(userId);
       allow create, update: if ownsDocument(userId)
-        && validNumber(request.resource.data.amount, 0, 1000000000000)
+        && request.resource.data.keys().hasOnly(['id', 'userId', 'partyName', 'direction', 'amount', 'dueDate', 'note', 'status', 'paidAmount', 'payments', 'createdAt', 'updatedAt'])
+        && validNumber(request.resource.data.amount, 1, 1000000000000)
         && (request.resource.data.direction in ['receivable', 'payable'])
         && validString(request.resource.data.partyName, 200)
-        && (request.resource.data.get('paidAmount', null) == null || validNumber(request.resource.data.paidAmount, 0, 1000000000000))
-        && (request.resource.data.get('status', null) == null || (request.resource.data.status in ['open', 'partial', 'settled']));
+        && (request.resource.data.get('paidAmount', null) == null || (validNumber(request.resource.data.paidAmount, 0, 1000000000000) && request.resource.data.paidAmount <= request.resource.data.amount))
+        && (request.resource.data.get('status', null) == null || (request.resource.data.status in ['open', 'partial', 'settled']))
+        && (request.resource.data.get('note', null) == null || (request.resource.data.note is string && request.resource.data.note.size() <= 500))
+        && (request.resource.data.get('payments', null) == null || request.resource.data.payments is list);
       allow delete: if signedInAs(userId);
     }
 
     match /users/{userId}/products/{productId} {
       allow read: if signedInAs(userId);
       allow create, update: if ownsDocument(userId)
-        && validString(request.resource.data.name, 200)
-        && (request.resource.data.get('defaultUnit', null) == null || (request.resource.data.defaultUnit is string && request.resource.data.defaultUnit.size() <= 50));
+        && request.resource.data.keys().hasOnly(['id', 'userId', 'name', 'canonicalName', 'defaultUnit', 'lowStockThreshold', 'active', 'createdAt', 'updatedAt'])
+        && validString(request.resource.data.name, 120)
+        && validString(request.resource.data.defaultUnit, 32)
+        && (request.resource.data.get('lowStockThreshold', null) == null || validNumber(request.resource.data.lowStockThreshold, 0, 10000000))
+        && (request.resource.data.get('active', null) == null || request.resource.data.active is bool);
       allow delete: if signedInAs(userId);
     }
 
     match /users/{userId}/stockMovements/{movementId} {
       allow read: if signedInAs(userId);
       allow create, update: if ownsDocument(userId)
-        && validNumber(request.resource.data.quantityDelta, -10000000, 10000000)
-        && (request.resource.data.get('kind', null) == null || (request.resource.data.kind in ['purchase', 'sale', 'adjustment']));
+        && request.resource.data.keys().hasOnly(['id', 'userId', 'productId', 'itemName', 'canonicalItemName', 'unit', 'kind', 'quantityDelta', 'reason', 'sourceTransactionId', 'occurredAt', 'createdAt'])
+        && validString(request.resource.data.productId, 100)
+        && (request.resource.data.kind in ['purchase', 'sale', 'adjustment'])
+        && request.resource.data.quantityDelta is number
+        && request.resource.data.quantityDelta != 0
+        && request.resource.data.quantityDelta >= -10000000
+        && request.resource.data.quantityDelta <= 10000000
+        && (request.resource.data.get('reason', null) == null || (request.resource.data.reason is string && request.resource.data.reason.size() <= 500));
       allow delete: if signedInAs(userId);
     }
 
     match /users/{userId}/counterparties/{counterpartyId} {
       allow read: if signedInAs(userId);
       allow create, update: if ownsDocument(userId)
-        && validString(request.resource.data.name, 200);
+        && request.resource.data.keys().hasOnly(['id', 'userId', 'name', 'createdAt', 'updatedAt'])
+        && validString(request.resource.data.name, 160);
       allow delete: if signedInAs(userId);
     }
 
     match /users/{userId}/settings/{document=**} {
       allow read: if signedInAs(userId);
       allow write: if signedInAs(userId)
-        && request.resource.data.keys().size() <= 20
+        && request.resource.data.keys().hasOnly(['revenueGoals', 'monthlyRevenueGoal', 'theme', 'updatedAt', 'userId'])
         && (request.resource.data.get('revenueGoals', null) == null || request.resource.data.revenueGoals is map);
     }
 

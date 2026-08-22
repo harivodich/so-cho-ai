@@ -40,6 +40,14 @@ function validateInsightInvariants(data: DailyInsightSnapshot): string | null {
     if (data.sevenDay.startDate > data.sevenDay.endDate) {
       return "Ngày bắt đầu chu kỳ 7 ngày không thể sau ngày kết thúc.";
     }
+    const startMs = Date.parse(data.sevenDay.startDate);
+    const endMs = Date.parse(data.sevenDay.endDate);
+    if (!isNaN(startMs) && !isNaN(endMs)) {
+      const diffDays = Math.round((endMs - startMs) / (1000 * 60 * 60 * 24));
+      if (diffDays < 6 || diffDays > 7) {
+        return "Chu kỳ so sánh 7 ngày phải có khoảng cách đúng 6 hoặc 7 ngày.";
+      }
+    }
   }
   return null;
 }
