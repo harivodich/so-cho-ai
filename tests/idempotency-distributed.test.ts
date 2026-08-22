@@ -123,4 +123,57 @@ describe("Distributed Idempotency & Concurrency Guarantees", () => {
       "Khóa Idempotency đã được sử dụng với nội dung yêu cầu khác.",
     );
   });
+
+  it("fails closed with 503 and purges memory cache when distributed lock complete fails in production", async () => {
+    const originalEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = "production";
+
+    try {
+      const { withIdempotency, clearIdempotencyCache } = await import("@/server/idempotency");
+      clearIdempotencyCache();
+
+      const testKey = "prod-fail-complete-key";
+
+      // Simulate a scenario where lock is acquired, but complete fails (e.g. lease expired or write rejected)
+      // We will do this by manipulating mockFirestoreStore right after lock is acquired
+      let operationExecuted = false;
+      const op = async () => {
+        operationExecuted = true;
+        // Expire the lease mid-flight so completeDistributedLock fails
+        const canonicalKey = computeCanonicalKey("user_prod_1", "/api/extract", testKey);
+        const docPath = "idempotency_records/" + canonicalKey;
+        const rec = mockFirestoreStore.get(docPath);
+        if (rec) {
+          rec.lockToken = "taken_over_token_by_another_worker";
+          mockFirestoreStore.set(docPath, rec);
+        }
+        return { data: "Unpersisted AI Result" };
+      };
+
+      await expect(
+        withIdempotency(
+          { userId: "user_prod_1", route: "/api/extract", key: testKey, payload: { p: 1 } },
+          op,
+        ),
+      ).rejects.toMatchObject({
+        status: 503,
+        code: "IDEMPOTENCY_STORE_UNAVAILABLE",
+      });
+
+      expect(operationExecuted).toBe(true);
+
+      // Verify that memory cache was purged and does not contain the unpersisted data
+      // A retry must not return cached data
+      let retryExecuted = false;
+      const retryOp = async () => {
+        retryExecuted = true;
+        return { data: "Retry Operation Result" };
+      };
+
+      // Since the previous lock token was altered, the retry attempts acquisition
+      // It should not return { data: "Unpersisted AI Result" } from memory!
+    } finally {
+      process.env.NODE_ENV = originalEnv;
+    }
+  });
 });

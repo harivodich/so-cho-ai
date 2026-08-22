@@ -251,8 +251,41 @@ describe("Route Integration: /api/insights", () => {
       }),
     });
 
-    // Zod schema catches negative or invariant check catches
     const res = await POST(req);
     expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.error.code).toBe("UNPROCESSABLE_ENTITY");
+    expect(body.error.message).toContain("Số liệu tổng hợp không đúng cấu trúc");
+  });
+
+  it("returns 422 when sevenDay startDate is after endDate", async () => {
+    const req = new Request("http://localhost/api/insights", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer valid_token",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ...validSnapshot,
+        sevenDay: {
+          startDate: "2026-08-25", // After endDate
+          endDate: "2026-08-22",
+          todayRevenue: 1000000,
+          averageDailyRevenue: 500000,
+          revenueDelta: 0,
+          revenueDeltaPercent: 0,
+          todaySaleCount: 5,
+          averageSaleValue: 100000,
+          missingCostSaleCount: 0,
+          topItemName: "Xoài",
+        },
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.error.code).toBe("INVALID_INSIGHT_INVARIANTS");
+    expect(body.error.message).toContain("Ngày bắt đầu chu kỳ 7 ngày không thể sau ngày kết thúc");
   });
 });

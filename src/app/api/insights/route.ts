@@ -37,14 +37,8 @@ function validateInsightInvariants(data: DailyInsightSnapshot): string | null {
     return "Giá trị đơn trung bình phải bằng 0 khi không có đơn bán.";
   }
   if (data.sevenDay) {
-    if (
-      data.sevenDay.todayRevenue < 0 ||
-      data.sevenDay.averageDailyRevenue < 0 ||
-      data.sevenDay.todaySaleCount < 0 ||
-      data.sevenDay.averageSaleValue < 0 ||
-      data.sevenDay.missingCostSaleCount < 0
-    ) {
-      return "Số liệu 7 ngày không thể là số âm.";
+    if (data.sevenDay.startDate > data.sevenDay.endDate) {
+      return "Ngày bắt đầu chu kỳ 7 ngày không thể sau ngày kết thúc.";
     }
   }
   return null;

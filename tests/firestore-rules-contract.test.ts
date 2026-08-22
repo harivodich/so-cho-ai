@@ -25,9 +25,11 @@ describe("Firestore Security Rules Contract & Safety Analysis", () => {
   it("enforces schema and numeric non-negative bounds across transactions and debts", () => {
     expect(rules).toContain("validNumber(request.resource.data.amount, 0, 1000000000000)");
     expect(rules).toContain("request.resource.data.type in ['sale', 'purchase', 'expense']");
-    expect(rules).toContain("request.resource.data.type in ['receivable', 'payable']");
-    expect(rules).toContain("validString(request.resource.data.itemName, 200)");
-    expect(rules).toContain("validString(request.resource.data.counterpartyName, 200)");
+    expect(rules).toContain("request.resource.data.direction in ['receivable', 'payable']");
+    expect(rules).toContain("validString(request.resource.data.partyName, 200)");
+    expect(rules).toContain("validNumber(request.resource.data.quantityDelta, -10000000, 10000000)");
+    expect(rules).toContain("request.resource.data.get('defaultUnit', null)");
+    expect(rules).toContain("request.resource.data.get('itemName', null)");
   });
 
   it("restricts /idempotency_records to server-only Firebase Admin access", () => {
