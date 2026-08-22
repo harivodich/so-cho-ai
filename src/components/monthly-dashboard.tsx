@@ -67,9 +67,6 @@ export function PeriodDashboard({
   const firstPoint = chartPoints[0];
   const lastPoint = chartPoints.at(-1);
   const bestRevenueDay = report.bestRevenueDay;
-  const bestChartPoint = bestRevenueDay
-    ? chartPoints.find((point) => point.date === bestRevenueDay.date)
-    : undefined;
 
   const trendIcon: "chart" | "trend-down" | "trend-up" =
     report.revenueChangePercent === null || report.revenueChangePercent === 0
@@ -260,14 +257,42 @@ export function PeriodDashboard({
                     );
                   })
                 ) : (
-                  // Line Chart View
+                  // Line Chart View with full keyboard accessibility
                   <>
                     <polyline className="chart-line" points={linePoints} />
-                    {bestChartPoint ? (
-                      <circle className="chart-point is-best" cx={bestChartPoint.x} cy={bestChartPoint.y} r="5" />
-                    ) : null}
-                    <circle className="chart-endpoint" cx={firstPoint.x} cy={firstPoint.y} r="3" />
-                    <circle className="chart-endpoint" cx={lastPoint.x} cy={lastPoint.y} r="3" />
+                    {chartPoints.map((point) => {
+                      const isBest = bestRevenueDay?.date === point.date;
+                      const isSelected = activeDay?.date === point.date;
+                      return (
+                        <circle
+                          key={point.date}
+                          className={`chart-interactive-point ${isBest ? "is-best" : ""} ${isSelected ? "is-selected" : ""}`}
+                          cx={point.x}
+                          cy={point.y}
+                          r={isSelected ? 6 : isBest ? 5 : 3.5}
+                          tabIndex={0}
+                          role="button"
+                          aria-label={`${formatVietnameseDate(point.date)}: ${formatVnd(point.revenue)} (${point.transactionCount} giao dịch)`}
+                          onClick={() => {
+                            triggerHapticFeedback(15);
+                            setActiveDay(isSelected ? null : point);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              triggerHapticFeedback(15);
+                              setActiveDay(isSelected ? null : point);
+                            }
+                          }}
+                          onMouseEnter={() => setActiveDay(point)}
+                          onMouseLeave={() => setActiveDay(null)}
+                          fill={isSelected ? "#059669" : isBest ? "#10b981" : "#0f6b4a"}
+                          stroke="#ffffff"
+                          strokeWidth={1.5}
+                          style={{ cursor: "pointer", outline: "none" }}
+                        />
+                      );
+                    })}
                   </>
                 )}
               </svg>

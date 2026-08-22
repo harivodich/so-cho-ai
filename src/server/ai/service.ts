@@ -1,19 +1,28 @@
 import { randomUUID } from "node:crypto";
 
 import { transactionDraftsJsonSchema, imageTransactionDraftsJsonSchema, parseExtractionDrafts, parseImageExtractionDrafts } from "@/lib/extraction/schema";
+import { applyDataQualityGuard } from "@/lib/extraction/data-quality";
 import { dailyInsightJsonSchema, dailyInsightSchema, type DailyInsight, type DailyInsightSnapshot } from "@/lib/insights/schema";
 import { promptRegistry } from "@/server/ai/prompt-registry";
 import { getModelConfig } from "@/server/ai/model-registry";
 import { defaultGeminiProvider, type GeminiProvider } from "@/server/ai/providers/gemini";
 import { metrics } from "@/server/observability/metrics";
 import { logger } from "@/server/observability/logger";
+import { AppHttpError } from "@/server/http/errors";
 import type { ExtractionRun } from "@/types/ai";
 import type { TransactionDraft } from "@/types/transaction";
+
+export type TransactionHistorySample = {
+  amount: number;
+  type: "sale" | "purchase" | "expense";
+  canonicalItemName: string | null;
+};
 
 export type AudioExtractionServiceInput = {
   audioBase64: string;
   mimeType: string;
   currentDate: string;
+  history?: TransactionHistorySample[];
   modelId?: string;
   promptVersion?: string;
   fetchImpl?: typeof fetch;
@@ -23,6 +32,7 @@ export type ImageExtractionServiceInput = {
   imageBase64: string;
   mimeType: string;
   currentDate: string;
+  history?: TransactionHistorySample[];
   modelId?: string;
   promptVersion?: string;
   fetchImpl?: typeof fetch;
@@ -62,28 +72,40 @@ export class AiApplicationService {
         },
         input.fetchImpl,
       );
-      metrics.recordAiCall(modelConfig.modelName, result.latencyMs, true, result.tokenUsage);
     } catch (err) {
       metrics.recordAiCall(modelConfig.modelName, 0, false);
-      logger.error("AI audio extraction failed", { model: modelConfig.modelName, promptVersion, error: String(err) });
+      logger.error("AI audio extraction provider failed", { model: modelConfig.modelName, promptVersion, error: String(err) });
       throw err;
     }
 
-    const drafts = parseExtractionDrafts(result.parsedJson, input.currentDate);
+    try {
+      const rawDrafts = parseExtractionDrafts(result.parsedJson, input.currentDate);
+      const history = input.history || [];
+      const drafts = rawDrafts.map((draft) =>
+        applyDataQualityGuard(draft, { currentDate: input.currentDate, history }),
+      );
 
-    const run: ExtractionRun = {
-      runId: randomUUID(),
-      mode: "voice",
-      model: modelConfig.modelName,
-      promptVersion,
-      latencyMs: result.latencyMs,
-      tokenUsage: result.tokenUsage,
-      draftCount: drafts.length,
-      qualityCheckCount: drafts.reduce((acc, d) => acc + (d.qualityChecks?.length || 0), 0),
-      needsReview: drafts.some((d) => (d.qualityChecks && d.qualityChecks.length > 0) || d.missingFields.length > 0),
-    };
+      // Record metric ONLY after complete verification and guard checks
+      metrics.recordAiCall(modelConfig.modelName, result.latencyMs, true, result.tokenUsage);
 
-    return { drafts, run };
+      const run: ExtractionRun = {
+        runId: randomUUID(),
+        mode: "voice",
+        model: modelConfig.modelName,
+        promptVersion,
+        latencyMs: result.latencyMs,
+        tokenUsage: result.tokenUsage,
+        draftCount: drafts.length,
+        qualityCheckCount: drafts.reduce((acc, d) => acc + (d.qualityChecks?.length || 0), 0),
+        needsReview: drafts.some((d) => (d.qualityChecks && d.qualityChecks.length > 0) || d.missingFields.length > 0),
+      };
+
+      return { drafts, run };
+    } catch (err) {
+      metrics.recordAiCall(modelConfig.modelName, result.latencyMs, false);
+      logger.error("AI audio extraction schema validation failed", { model: modelConfig.modelName, promptVersion, error: String(err) });
+      throw err;
+    }
   }
 
   async extractImage(input: ImageExtractionServiceInput): Promise<{
@@ -110,28 +132,40 @@ export class AiApplicationService {
         },
         input.fetchImpl,
       );
-      metrics.recordAiCall(modelConfig.modelName, result.latencyMs, true, result.tokenUsage);
     } catch (err) {
       metrics.recordAiCall(modelConfig.modelName, 0, false);
-      logger.error("AI image extraction failed", { model: modelConfig.modelName, promptVersion, error: String(err) });
+      logger.error("AI image extraction provider failed", { model: modelConfig.modelName, promptVersion, error: String(err) });
       throw err;
     }
 
-    const drafts = parseImageExtractionDrafts(result.parsedJson, input.currentDate);
+    try {
+      const rawDrafts = parseImageExtractionDrafts(result.parsedJson, input.currentDate);
+      const history = input.history || [];
+      const drafts = rawDrafts.map((draft) =>
+        applyDataQualityGuard(draft, { currentDate: input.currentDate, history }),
+      );
 
-    const run: ExtractionRun = {
-      runId: randomUUID(),
-      mode: "image",
-      model: modelConfig.modelName,
-      promptVersion,
-      latencyMs: result.latencyMs,
-      tokenUsage: result.tokenUsage,
-      draftCount: drafts.length,
-      qualityCheckCount: drafts.reduce((acc, d) => acc + (d.qualityChecks?.length || 0), 0),
-      needsReview: drafts.some((d) => (d.qualityChecks && d.qualityChecks.length > 0) || d.missingFields.length > 0),
-    };
+      // Record metric ONLY after complete verification and guard checks
+      metrics.recordAiCall(modelConfig.modelName, result.latencyMs, true, result.tokenUsage);
 
-    return { drafts, run };
+      const run: ExtractionRun = {
+        runId: randomUUID(),
+        mode: "image",
+        model: modelConfig.modelName,
+        promptVersion,
+        latencyMs: result.latencyMs,
+        tokenUsage: result.tokenUsage,
+        draftCount: drafts.length,
+        qualityCheckCount: drafts.reduce((acc, d) => acc + (d.qualityChecks?.length || 0), 0),
+        needsReview: drafts.some((d) => (d.qualityChecks && d.qualityChecks.length > 0) || d.missingFields.length > 0),
+      };
+
+      return { drafts, run };
+    } catch (err) {
+      metrics.recordAiCall(modelConfig.modelName, result.latencyMs, false);
+      logger.error("AI image extraction schema validation failed", { model: modelConfig.modelName, promptVersion, error: String(err) });
+      throw err;
+    }
   }
 
   async generateDailyInsight(input: DailyInsightServiceInput): Promise<{
@@ -155,17 +189,20 @@ export class AiApplicationService {
         },
         input.fetchImpl,
       );
-      metrics.recordAiCall(modelConfig.modelName, result.latencyMs, true, result.tokenUsage);
     } catch (err) {
       metrics.recordAiCall(modelConfig.modelName, 0, false);
-      logger.error("AI daily insight generation failed", { model: modelConfig.modelName, promptVersion, error: String(err) });
+      logger.error("AI daily insight provider failed", { model: modelConfig.modelName, promptVersion, error: String(err) });
       throw err;
     }
 
     const parsed = dailyInsightSchema.safeParse(result.parsedJson);
     if (!parsed.success) {
-      throw new Error("Không thể phân tích cấu trúc phản hồi nhận xét AI.");
+      metrics.recordAiCall(modelConfig.modelName, result.latencyMs, false);
+      logger.error("AI daily insight output schema mismatch", { model: modelConfig.modelName, promptVersion });
+      throw new AppHttpError(422, "UNPROCESSABLE_ENTITY", "Không thể phân tích cấu trúc phản hồi nhận xét AI.");
     }
+
+    metrics.recordAiCall(modelConfig.modelName, result.latencyMs, true, result.tokenUsage);
 
     return {
       insight: parsed.data,

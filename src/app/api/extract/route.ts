@@ -1,8 +1,8 @@
+import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
 import { ExtractionQuotaError, enforceExtractionQuota, vietnamDateKey } from "@/lib/extraction/quota";
-import { applyDataQualityGuard } from "@/lib/extraction/data-quality";
 import { ExtractionValidationError } from "@/lib/extraction/schema";
 import { validateAudioUpload } from "@/lib/extraction/audio-validation";
 import { validateImageUpload } from "@/lib/extraction/image-validation";
@@ -98,30 +98,29 @@ export async function POST(request: Request) {
 
   try {
     const fileBytes = await file.arrayBuffer();
-    const fileBase64 = Buffer.from(fileBytes).toString("base64");
+    const fileBuffer = Buffer.from(fileBytes);
+    // Hash REAL file content bytes to avoid collisions
+    const fileHash = createHash("sha256").update(fileBuffer).digest("hex");
+    const fileBase64 = fileBuffer.toString("base64");
 
     const { data } = await withIdempotency(
       {
         userId: user.uid,
         route: "/api/extract",
         key: idempotencyKey,
-        payload: { mode, size: file.size, type: file.type },
+        payload: { mode, fileHash, size: file.size, type: file.type },
       },
       async () => {
         await enforceExtractionQuota(user.uid);
         const currentDate = vietnamDateKey(new Date());
+        const history = await recentTransactionHistory(user.uid);
 
         const extractionResult = mode === "voice"
-          ? await aiApplicationService.extractAudio({ audioBase64: fileBase64, mimeType: file.type, currentDate })
-          : await aiApplicationService.extractImage({ imageBase64: fileBase64, mimeType: file.type, currentDate });
-
-        const history = await recentTransactionHistory(user.uid);
-        const checkedDrafts = extractionResult.drafts.map((draft) =>
-          applyDataQualityGuard(draft, { currentDate, history }),
-        );
+          ? await aiApplicationService.extractAudio({ audioBase64: fileBase64, mimeType: file.type, currentDate, history })
+          : await aiApplicationService.extractImage({ imageBase64: fileBase64, mimeType: file.type, currentDate, history });
 
         return {
-          drafts: checkedDrafts,
+          drafts: extractionResult.drafts,
           metadata: extractionResult.run,
         };
       },

@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 
 import { AccountPanel } from "@/components/account-panel";
 import { AppShell, type AppTab } from "@/components/app-shell";
+import { AccessibleDialog } from "@/components/ui/dialog";
 import { ProductCatalogWorkspace } from "@/components/product-catalog-workspace";
 import { DebtWorkspace } from "@/components/debt-workspace";
 import { ConfirmationPanel } from "@/components/confirmation-panel";
@@ -33,6 +34,13 @@ import type {
 
 type View = "home" | "form" | "confirm" | "voice" | "image";
 type ExtractResponse = { drafts?: unknown; error?: unknown };
+
+type ConfirmDialogState = {
+  title: string;
+  description: string;
+  confirmLabel: string;
+  onConfirm: () => Promise<void> | void;
+};
 
 function draftFromTransaction(transaction: ConfirmedTransaction): TransactionDraft {
   const {
@@ -112,6 +120,10 @@ export default function HomePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null);
+
+  const currentVoiceKeyRef = useRef<string | null>(null);
+  const currentImageKeyRef = useRef<string | null>(null);
   const backupInputRef = useRef<HTMLInputElement>(null);
 
   const isRealAccount = persistence === "firebase" && Boolean(auth.user && !auth.user.isAnonymous);
@@ -135,20 +147,32 @@ export default function HomePage() {
   }
 
   function startVoiceEntry() {
+    if (!isRealAccount) {
+      setAccountOpen(true);
+      setActionError("Đăng nhập tài khoản Google hoặc Email để dùng tính năng ghi sổ bằng giọng nói AI.");
+      return;
+    }
     setActionError(null);
     setEditing(null);
     setDraft(null);
     setPendingImageDrafts([]);
+    currentVoiceKeyRef.current = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `voice-${Date.now()}`;
     setDraftInputMethod("voice");
     setView("voice");
     setActiveTab("entry");
   }
 
   function startImageEntry() {
+    if (!isRealAccount) {
+      setAccountOpen(true);
+      setActionError("Đăng nhập tài khoản Google hoặc Email để dùng tính năng đọc hóa đơn ảnh AI.");
+      return;
+    }
     setActionError(null);
     setEditing(null);
     setDraft(null);
     setPendingImageDrafts([]);
+    currentImageKeyRef.current = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `image-${Date.now()}`;
     setDraftInputMethod("image");
     setView("image");
     setActiveTab("entry");
@@ -175,9 +199,13 @@ export default function HomePage() {
     formData.set("mode", "voice");
     formData.set("audio", audio);
 
-    const idempotencyKey = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : undefined;
+    // Reuse stable operation key across retries to prevent duplicate Gemini charges
+    if (!currentVoiceKeyRef.current) {
+      currentVoiceKeyRef.current = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `voice-${Date.now()}`;
+    }
+
     const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
-    if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
+    headers["Idempotency-Key"] = currentVoiceKeyRef.current;
 
     const response = await fetch("/api/extract", {
       method: "POST",
@@ -210,9 +238,13 @@ export default function HomePage() {
     formData.set("mode", "image");
     formData.set("image", image);
 
-    const idempotencyKey = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : undefined;
+    // Reuse stable operation key across retries
+    if (!currentImageKeyRef.current) {
+      currentImageKeyRef.current = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `image-${Date.now()}`;
+    }
+
     const headers: Record<string, string> = { Authorization: "Bearer " + token };
-    if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
+    headers["Idempotency-Key"] = currentImageKeyRef.current;
 
     const response = await fetch("/api/extract", {
       method: "POST",
@@ -288,21 +320,24 @@ export default function HomePage() {
     }
   }
 
-  async function deleteTransaction(transaction: ConfirmedTransaction) {
-    if (!window.confirm(`Xóa giao dịch ${transaction.itemName ?? "này"}? Hành động này không thể hoàn tác.`)) {
-      return;
-    }
-
-    setActionError(null);
-    try {
-      await remove(transaction.id);
-      await catalog.removeTransaction(transaction.id);
-      triggerHapticFeedback(20);
-    } catch (reason) {
-      setActionError(
-        reason instanceof Error ? `Không thể xóa giao dịch: ${reason.message}` : "Không thể xóa giao dịch.",
-      );
-    }
+  function deleteTransaction(transaction: ConfirmedTransaction) {
+    setConfirmDialog({
+      title: "Xóa giao dịch",
+      description: `Bạn có chắc muốn xóa giao dịch "${transaction.itemName || "này"}"? Hành động này không thể hoàn tác.`,
+      confirmLabel: "Xóa giao dịch",
+      onConfirm: async () => {
+        setActionError(null);
+        try {
+          await remove(transaction.id);
+          await catalog.removeTransaction(transaction.id);
+          triggerHapticFeedback(20);
+        } catch (reason) {
+          setActionError(
+            reason instanceof Error ? `Không thể xóa giao dịch: ${reason.message}` : "Không thể xóa giao dịch.",
+          );
+        }
+      },
+    });
   }
 
   function exportBackupData() {
@@ -321,26 +356,31 @@ export default function HomePage() {
     setActionError(null);
     try {
       const backup = reassignBackupOwner(parseBackup(JSON.parse(await file.text())), userScope ?? "local-device");
-      if (!window.confirm(`Nhập ${backup.transactions.length} giao dịch và ${backup.debts.length} khoản công nợ? Dữ liệu trùng mã sẽ được cập nhật.`)) return;
-
-      const importedProducts = new Map<string, Awaited<ReturnType<typeof catalog.saveProduct>>>();
-      for (const product of backup.products) {
-        const savedProduct = await catalog.saveProduct(product);
-        importedProducts.set(product.id, savedProduct);
-      }
-      for (const t of backup.transactions) {
-        await save(t);
-        await catalog.syncTransaction(t);
-      }
-      for (const d of backup.debts) await debts.save(d);
-      for (const c of backup.counterparties) await counterparties.remember(c.name);
-      for (const movement of backup.stockMovements.filter((m) => m.kind === "adjustment" && m.sourceTransactionId === null)) {
-        const product = importedProducts.get(movement.productId);
-        if (product) {
-          await catalog.addAdjustment({ product, quantityDelta: movement.quantityDelta, reason: movement.reason ?? "Nhập từ backup", occurredAt: movement.occurredAt });
-        }
-      }
-      triggerHapticFeedback([30, 20, 30]);
+      setConfirmDialog({
+        title: "Nhập sao lưu dữ liệu",
+        description: `Nhập ${backup.transactions.length} giao dịch và ${backup.debts.length} khoản công nợ? Dữ liệu trùng mã sẽ được cập nhật.`,
+        confirmLabel: "Tiến hành nhập",
+        onConfirm: async () => {
+          const importedProducts = new Map<string, Awaited<ReturnType<typeof catalog.saveProduct>>>();
+          for (const product of backup.products) {
+            const savedProduct = await catalog.saveProduct(product);
+            importedProducts.set(product.id, savedProduct);
+          }
+          for (const t of backup.transactions) {
+            await save(t);
+            await catalog.syncTransaction(t);
+          }
+          for (const d of backup.debts) await debts.save(d);
+          for (const c of backup.counterparties) await counterparties.remember(c.name);
+          for (const movement of backup.stockMovements.filter((m) => m.kind === "adjustment" && m.sourceTransactionId === null)) {
+            const product = importedProducts.get(movement.productId);
+            if (product) {
+              await catalog.addAdjustment({ product, quantityDelta: movement.quantityDelta, reason: movement.reason ?? "Nhập từ backup", occurredAt: movement.occurredAt });
+            }
+          }
+          triggerHapticFeedback([30, 20, 30]);
+        },
+      });
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "Nhập bản sao lưu thất bại.");
     } finally {
@@ -390,7 +430,7 @@ export default function HomePage() {
     >
       {/* Account Drawer Panel */}
       {accountOpen ? (
-        <div id="account-panel">
+        <div className="account-panel-drawer">
           <AccountPanel
             error={auth.error}
             isLoading={auth.isLoading}
@@ -426,6 +466,35 @@ export default function HomePage() {
           />
         </div>
       ) : null}
+
+      {/* Accessible Confirmation Modal Dialog */}
+      <AccessibleDialog
+        isOpen={Boolean(confirmDialog)}
+        onClose={() => setConfirmDialog(null)}
+        title={confirmDialog?.title ?? "Xác nhận hành động"}
+        description={confirmDialog?.description}
+      >
+        <div className="modal-confirm-actions">
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => setConfirmDialog(null)}
+          >
+            Hủy bỏ
+          </button>
+          <button
+            type="button"
+            className="danger-button"
+            onClick={async () => {
+              const action = confirmDialog;
+              setConfirmDialog(null);
+              if (action) await action.onConfirm();
+            }}
+          >
+            {confirmDialog?.confirmLabel ?? "Xác nhận"}
+          </button>
+        </div>
+      </AccessibleDialog>
 
       {/* Global Alerts & Notices */}
       {dataError ? (
@@ -500,7 +569,6 @@ export default function HomePage() {
                   className="entry-method entry-method-primary"
                   type="button"
                   onClick={startVoiceEntry}
-                  disabled={Boolean(aiAccessHint)}
                 >
                   <span className="entry-method-icon" aria-hidden="true">
                     <UiIcon name="microphone" size={22} />
@@ -516,7 +584,6 @@ export default function HomePage() {
                   className="entry-method"
                   type="button"
                   onClick={startImageEntry}
-                  disabled={Boolean(aiAccessHint)}
                 >
                   <span className="entry-method-icon" aria-hidden="true">
                     <UiIcon name="image" size={20} />

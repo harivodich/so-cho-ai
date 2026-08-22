@@ -52,6 +52,7 @@ export function ManualTransactionForm({ initialDraft, products = [], transaction
   const [taxRate, setTaxRate] = useState(String(initialDraft?.tax?.taxRatePercent ?? 0));
   const [formError, setFormError] = useState<string | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
 
   // Suggestions from catalog products and recent transactions
   const suggestions = useMemo(() => {
@@ -97,6 +98,35 @@ export function ManualTransactionForm({ initialDraft, products = [], transaction
       }
     }
     setShowSuggestions(false);
+    setHighlightedIndex(-1);
+  }
+
+  function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (!showSuggestions || suggestions.length === 0) {
+      if (event.key === "ArrowDown") {
+        setShowSuggestions(true);
+        setHighlightedIndex(0);
+        event.preventDefault();
+      }
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setHighlightedIndex((prev) => (prev + 1) % suggestions.length);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setHighlightedIndex((prev) => (prev <= 0 ? suggestions.length - 1 : prev - 1));
+    } else if (event.key === "Enter") {
+      if (highlightedIndex >= 0 && highlightedIndex < suggestions.length) {
+        event.preventDefault();
+        selectSuggestion(suggestions[highlightedIndex]);
+      }
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      setShowSuggestions(false);
+      setHighlightedIndex(-1);
+    }
   }
 
   function addQuickAmount(delta: number) {
@@ -205,26 +235,33 @@ export function ManualTransactionForm({ initialDraft, products = [], transaction
             aria-autocomplete="list"
             aria-expanded={showSuggestions && suggestions.length > 0}
             aria-controls="item-name-suggestions"
+            aria-activedescendant={
+              showSuggestions && highlightedIndex >= 0 ? `suggestion-opt-${highlightedIndex}` : undefined
+            }
             value={itemName}
             onChange={(event) => {
               setItemName(event.target.value);
               setShowSuggestions(true);
+              setHighlightedIndex(-1);
             }}
             onFocus={() => setShowSuggestions(true)}
-            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 250)}
+            onKeyDown={handleKeyDown}
             placeholder={type === "expense" ? "Ví dụ: tiền đá, vận chuyển" : "Ví dụ: xoài Cát Hòa Lộc"}
             autoComplete="off"
           />
         </label>
         {showSuggestions && suggestions.length > 0 ? (
           <div className="item-autocomplete-dropdown" id="item-name-suggestions" role="listbox" aria-label="Gợi ý mặt hàng">
-            {suggestions.map((item) => (
+            {suggestions.map((item, idx) => (
               <button
                 type="button"
+                id={`suggestion-opt-${idx}`}
                 role="option"
-                aria-selected={itemName === item.name}
-                className="autocomplete-item"
+                aria-selected={highlightedIndex === idx || itemName === item.name}
+                className={`autocomplete-item ${highlightedIndex === idx ? "focused" : ""}`}
                 key={item.name}
+                onMouseEnter={() => setHighlightedIndex(idx)}
                 onMouseDown={(e) => {
                   e.preventDefault();
                   selectSuggestion(item);
@@ -257,74 +294,124 @@ export function ManualTransactionForm({ initialDraft, products = [], transaction
             placeholder="20"
           />
         </label>
+
         <label>
-          <span className="field-label">Đơn vị</span>
-          <input value={unit} onChange={(event) => setUnit(event.target.value)} placeholder="kg" />
+          <span className="field-label">Đơn vị tính</span>
+          <input
+            value={unit}
+            onChange={(event) => setUnit(event.target.value)}
+            placeholder="kg, thùng, bó..."
+          />
         </label>
       </div>
 
       <div className="field-grid">
         <label>
-          <span className="field-label">Đơn giá <em>đ</em></span>
+          <span className="field-label">Đơn giá (VND)</span>
           <input
             inputMode="numeric"
-            min="0"
             value={unitPrice}
             onChange={(event) => {
               const value = event.target.value;
               setUnitPrice(value);
               updateCalculatedAmount(quantity, value);
             }}
-            placeholder="35.000"
+            placeholder="15000"
           />
         </label>
+
         <label>
-          <span className="field-label">Tổng tiền <b>*</b></span>
-          <input inputMode="numeric" min="1" required value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="700.000" />
+          <span className="field-label">Ngày giao dịch</span>
+          <input
+            type="date"
+            max={currentLocalDate()}
+            value={occurredAt}
+            onChange={(event) => setOccurredAt(event.target.value)}
+          />
         </label>
       </div>
 
-      {/* Quick Amount Chips */}
-      <div className="quick-amount-section">
-        <span className="quick-amount-label">Cộng nhanh số tiền:</span>
-        <div className="quick-amount-chips">
-          {QUICK_AMOUNTS.map((item) => (
-            <button
-              type="button"
-              className="quick-amount-chip"
-              key={item.label}
-              onClick={() => addQuickAmount(item.value)}
-            >
-              {item.label}
-            </button>
-          ))}
-          {amount ? (
-            <button
-              type="button"
-              className="quick-amount-chip chip-clear"
-              onClick={clearAmount}
-              title="Xóa tổng tiền"
-            >
-              <UiIcon name="trash" size={13} /> Xóa
-            </button>
-          ) : null}
-        </div>
-      </div>
-
-      <fieldset className="tax-inline-fields">
-        <legend>Thuế (tùy chọn)</legend>
-        <label><span className="field-label"><input type="checkbox" checked={taxApplied} onChange={(event) => setTaxApplied(event.target.checked)} /> Áp dụng thuế cho giao dịch này</span></label>
-        {taxApplied ? <label><span className="field-label">Tỷ lệ thuế (%)</span><input type="number" min="0" max="100" step="0.01" value={taxRate} onChange={(event) => setTaxRate(event.target.value)} /></label> : null}
-      </fieldset>
       <label>
-        <span className="field-label">Ngày giao dịch</span>
-        <input type="date" value={occurredAt} onChange={(event) => setOccurredAt(event.target.value)} />
+        <span className="field-label">Tổng tiền (VND) *</span>
+        <input
+          inputMode="numeric"
+          value={amount}
+          onChange={(event) => setAmount(event.target.value)}
+          placeholder="300000"
+          required
+        />
       </label>
 
-      {formError ? <p className="form-error" role="alert"><UiIcon name="alert" size={19} />{formError}</p> : null}
-      <button className="primary-button form-submit" type="submit">
-        Xem bản nháp <UiIcon name="chevron-right" size={19} />
-      </button>
+      <div className="quick-amount-chips">
+        {QUICK_AMOUNTS.map((chip) => (
+          <button
+            key={chip.label}
+            type="button"
+            className="quick-chip"
+            onClick={() => addQuickAmount(chip.value)}
+          >
+            {chip.label}
+          </button>
+        ))}
+        <button
+          type="button"
+          className="quick-chip quick-chip-clear"
+          onClick={clearAmount}
+          title="Xóa số tiền"
+        >
+          Xóa
+        </button>
+      </div>
+
+      {/* Tax Section */}
+      <div className="tax-collapsible">
+        <label className="tax-checkbox-label">
+          <input
+            type="checkbox"
+            checked={taxApplied}
+            onChange={(e) => {
+              triggerHapticFeedback(15);
+              setTaxApplied(e.target.checked);
+              if (e.target.checked && taxRate === "0") setTaxRate("1.5");
+            }}
+          />
+          <span>Tính thuế khoán tham khảo (hộ kinh doanh)</span>
+        </label>
+
+        {taxApplied ? (
+          <div className="tax-inputs-row">
+            <label>
+              <span className="field-label">Thuế suất %</span>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                step="0.1"
+                value={taxRate}
+                onChange={(e) => setTaxRate(e.target.value)}
+              />
+            </label>
+            <div className="tax-summary-badge">
+              <span>Tiền thuế: </span>
+              <strong>
+                {formatVnd(Math.round(((decimalValue(amount) || 0) * (Number(taxRate) || 0)) / 100))}
+              </strong>
+            </div>
+          </div>
+        ) : null}
+      </div>
+
+      {formError ? (
+        <p className="form-error" role="alert">
+          <UiIcon name="alert" size={18} /> {formError}
+        </p>
+      ) : null}
+
+      <div className="form-actions">
+        <button className="primary-button" type="submit">
+          Xem trước bản nháp <UiIcon name="chevron-right" size={17} />
+        </button>
+      </div>
     </form>
   );
 }

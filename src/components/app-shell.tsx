@@ -71,14 +71,13 @@ export function AppShell({
       {onQuickVoice && activeTab !== "entry" ? (
         <button
           type="button"
-          className="floating-voice-btn"
+          className={`floating-voice-btn ${isVoiceDisabled ? "voice-btn-login-hint" : ""}`}
           onClick={() => {
             triggerHapticFeedback([30, 20]);
             onQuickVoice();
           }}
-          disabled={isVoiceDisabled}
-          aria-label={isVoiceDisabled ? (voiceDisabledReason ?? "Cần đăng nhập để dùng voice AI") : "Ghi âm giọng nói nhanh"}
-          title={isVoiceDisabled ? voiceDisabledReason : "Nói để ghi sổ"}
+          aria-label={isVoiceDisabled ? (voiceDisabledReason ?? "Đăng nhập để dùng giọng nói AI") : "Ghi âm giọng nói nhanh"}
+          title={isVoiceDisabled ? (voiceDisabledReason ?? "Đăng nhập để dùng giọng nói AI") : "Nói để ghi sổ"}
         >
           <UiIcon name="microphone" size={22} />
           <span>Nói</span>

@@ -21,7 +21,21 @@ type Props = {
   localDataCount?: number;
 };
 
-export function AccountPanel({ user, isLoading, error, onGoogle, onGoogleExisting, onEmail, onResetPassword, onVerifyEmail, onSignOut, onDelete, onImportLocal, localTransactionCount, localDataCount }: Props) {
+export function AccountPanel({
+  user,
+  isLoading,
+  error,
+  onGoogle,
+  onGoogleExisting,
+  onEmail,
+  onResetPassword,
+  onVerifyEmail,
+  onSignOut,
+  onDelete,
+  onImportLocal,
+  localTransactionCount,
+  localDataCount,
+}: Props) {
   const [showEmail, setShowEmail] = useState(false);
   const [createAccount, setCreateAccount] = useState(true);
   const [email, setEmail] = useState("");
@@ -46,17 +60,22 @@ export function AccountPanel({ user, isLoading, error, onGoogle, onGoogleExistin
 
   async function continueWithGoogle() {
     if (user?.isAnonymous) {
-      const confirmed = window.confirm("Nếu tài khoản Google đã tồn tại, dữ liệu tạm sẽ không tự gộp. Hãy xuất backup trước khi tiếp tục.");
+      const confirmed = window.confirm(
+        "Nếu tài khoản Google đã tồn tại, dữ liệu tạm sẽ không tự gộp. Hãy xuất backup trước khi tiếp tục.",
+      );
       if (!confirmed) return;
     }
     await run(onGoogle);
   }
 
   async function continueWithExistingGoogle() {
-    const confirmed = window.confirm("Đăng nhập Google hiện có sẽ chuyển sang UID khác và không gộp dữ liệu phiên tạm. Hãy xuất backup trước khi tiếp tục.");
+    const confirmed = window.confirm(
+      "Đăng nhập Google hiện có sẽ chuyển sang UID khác và không gộp dữ liệu phiên tạm. Hãy xuất backup trước khi tiếp tục.",
+    );
     if (!confirmed) return;
     await run(onGoogleExisting);
   }
+
   async function submitEmail(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!email.trim() || password.length < 6) {
@@ -64,7 +83,9 @@ export function AccountPanel({ user, isLoading, error, onGoogle, onGoogleExistin
       return;
     }
     if (user?.isAnonymous && !createAccount) {
-      const confirmed = window.confirm("Đăng nhập tài khoản đã có sẽ chuyển sang UID khác. Hãy xuất backup trước nếu bạn cần giữ dữ liệu của phiên tạm. Tiếp tục?");
+      const confirmed = window.confirm(
+        "Đăng nhập tài khoản đã có sẽ chuyển sang UID khác. Hãy xuất backup trước nếu bạn cần giữ dữ liệu của phiên tạm. Tiếp tục?",
+      );
       if (!confirmed) return;
     }
     await run(() => onEmail(email, password, createAccount));
@@ -102,46 +123,109 @@ export function AccountPanel({ user, isLoading, error, onGoogle, onGoogleExistin
         <>
           <p className="account-status">
             <strong>{user?.isAnonymous ? "Đang dùng tài khoản tạm" : "Đăng nhập để đồng bộ dữ liệu"}</strong>
-            <span>{user?.isAnonymous ? "Dữ liệu đang gắn với trình duyệt này. Nâng cấp để dùng trên thiết bị khác mà không mất sổ." : "Tài khoản thật giúp dữ liệu thuộc về bạn và mở các tính năng AI."}</span>
+            <span>
+              {user?.isAnonymous
+                ? "Dữ liệu đang gắn với trình duyệt này. Nâng cấp để dùng trên thiết bị khác mà không mất sổ."
+                : "Tài khoản thật giúp dữ liệu thuộc về bạn và mở các tính năng AI."}
+            </span>
           </p>
-          <button className="primary-button account-google-button" type="button" disabled={isLoading || busy} onClick={() => void continueWithGoogle()}>
+          <button
+            className="primary-button account-google-button"
+            type="button"
+            disabled={isLoading || busy}
+            onClick={() => void continueWithGoogle()}
+          >
             <UiIcon name="check" size={18} /> Tiếp tục với Google
           </button>
           {user?.isAnonymous ? (
-            <button className="secondary-button" type="button" disabled={isLoading || busy} onClick={() => void continueWithExistingGoogle()}>
+            <button
+              className="secondary-button"
+              type="button"
+              disabled={isLoading || busy}
+              onClick={() => void continueWithExistingGoogle()}
+            >
               Đăng nhập Google hiện có
             </button>
           ) : null}
-          <button className="text-button account-email-toggle" type="button" disabled={busy} onClick={() => setShowEmail((value) => !value)}>
+          <button
+            className="text-button account-email-toggle"
+            type="button"
+            disabled={busy}
+            onClick={() => setShowEmail((value) => !value)}
+          >
             {showEmail ? "Ẩn đăng nhập email" : "Dùng email và mật khẩu"}
           </button>
         </>
       ) : user ? (
         <>
-          <p className="account-status connected"><strong>{user.displayName || user.email || "Tài khoản đã đăng nhập"}</strong><span>{user.email ?? "Đăng nhập bằng Google"}</span></p>
-          {user.email && !user.emailVerified ? <button className="secondary-button" type="button" disabled={busy} onClick={() => void run(onVerifyEmail)}>Gửi lại email xác minh</button> : null}
+          <p className="account-status connected">
+            <strong>{user.displayName || user.email || "Tài khoản đã đăng nhập"}</strong>
+            <span>{user.email ?? "Đăng nhập bằng Google"}</span>
+          </p>
+          {user.email && !user.emailVerified ? (
+            <button className="secondary-button" type="button" disabled={busy} onClick={() => void run(onVerifyEmail)}>
+              Gửi lại email xác minh
+            </button>
+          ) : null}
           {localImportCount > 0 ? (
             <div className="account-import-notice">
               <span>Có {localImportCount} mục dữ liệu cũ đang lưu trên thiết bị này.</span>
-              <button className="primary-button" type="button" disabled={busy} onClick={() => void importLocal()}>Nhập vào tài khoản</button>
+              <button className="primary-button" type="button" disabled={busy} onClick={() => void importLocal()}>
+                Nhập vào tài khoản
+              </button>
             </div>
           ) : null}
           <div className="account-actions">
-            <button className="secondary-button" type="button" disabled={busy} onClick={() => void run(onSignOut)}>Đăng xuất</button>
-            <button className="danger-button account-delete-button" type="button" disabled={busy} onClick={() => void deleteAccount()}>Xóa tài khoản</button>
+            <button className="secondary-button" type="button" disabled={busy} onClick={() => void run(onSignOut)}>
+              Đăng xuất
+            </button>
+            <button className="danger-button account-delete-button" type="button" disabled={busy} onClick={() => void deleteAccount()}>
+              Xóa tài khoản
+            </button>
           </div>
         </>
       ) : null}
 
       {showEmail && canSignIn ? (
         <form className="account-email-form" onSubmit={(event) => void submitEmail(event)}>
-          <label><span className="field-label">Email</span><input autoComplete="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="ban@example.com" /></label>
-          <label><span className="field-label">Mật khẩu</span><input autoComplete={createAccount ? "new-password" : "current-password"} minLength={6} type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Ít nhất 6 ký tự" /></label>
-          {!createAccount && user?.isAnonymous ? <p className="account-migration-warning"><UiIcon name="info" size={16} /> Đăng nhập tài khoản có sẵn sẽ chuyển UID. Nếu cần giữ dữ liệu tạm, hãy xuất backup rồi nhập lại sau khi đăng nhập.</p> : null}
-          <button className="primary-button" type="submit" disabled={busy}>{createAccount ? "Tạo tài khoản" : "Đăng nhập"}</button>
+          <label>
+            <span className="field-label">Email</span>
+            <input
+              autoComplete="email"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="ban@example.com"
+            />
+          </label>
+          <label>
+            <span className="field-label">Mật khẩu</span>
+            <input
+              autoComplete={createAccount ? "new-password" : "current-password"}
+              minLength={6}
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="Ít nhất 6 ký tự"
+            />
+          </label>
+          {!createAccount && user?.isAnonymous ? (
+            <p className="account-migration-warning">
+              <UiIcon name="info" size={16} /> Đăng nhập tài khoản có sẵn sẽ chuyển UID. Nếu cần giữ dữ liệu tạm, hãy xuất backup rồi nhập lại sau khi đăng nhập.
+            </p>
+          ) : null}
+          <button className="primary-button" type="submit" disabled={busy}>
+            {createAccount ? "Tạo tài khoản" : "Đăng nhập"}
+          </button>
           <div className="account-form-links">
-            <button className="text-button" type="button" onClick={() => setCreateAccount((value) => !value)}>{createAccount ? "Đã có tài khoản? Đăng nhập" : "Tạo tài khoản mới"}</button>
-            {!createAccount ? <button className="text-button" type="button" onClick={() => void resetPassword()} disabled={busy}>Quên mật khẩu?</button> : null}
+            <button className="text-button" type="button" onClick={() => setCreateAccount((value) => !value)}>
+              {createAccount ? "Đã có tài khoản? Đăng nhập" : "Tạo tài khoản mới"}
+            </button>
+            {!createAccount ? (
+              <button className="text-button" type="button" onClick={() => void resetPassword()} disabled={busy}>
+                Quên mật khẩu?
+              </button>
+            ) : null}
           </div>
         </form>
       ) : null}
