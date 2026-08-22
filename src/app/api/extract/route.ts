@@ -18,9 +18,11 @@ export const runtime = "nodejs";
 
 function errorResponse(message: string, status: number, requestId?: string, code?: string) {
   // Security Contract Assertion: decoded.firebase?.sign_in_provider === "anonymous"
-  const errCode = code || (status === 400 ? "BAD_REQUEST" : status === 401 ? "UNAUTHORIZED" : status === 403 ? "FORBIDDEN" : status === 409 ? "IDEMPOTENCY_KEY_REUSED" : status === 413 ? "PAYLOAD_TOO_LARGE" : status === 422 ? "UNPROCESSABLE_ENTITY" : status === 429 ? "QUOTA_EXCEEDED" : status === 504 ? "GATEWAY_TIMEOUT" : "INTERNAL_SERVER_ERROR");
+  const errCode = code || (status === 400 ? "BAD_REQUEST" : status === 401 ? "UNAUTHORIZED" : status === 403 ? "FORBIDDEN" : status === 409 ? "IDEMPOTENCY_KEY_REUSED" : status === 413 ? "PAYLOAD_TOO_LARGE" : status === 422 ? "UNPROCESSABLE_ENTITY" : status === 429 ? "QUOTA_EXCEEDED" : status === 503 ? "SERVICE_UNAVAILABLE" : status === 504 ? "GATEWAY_TIMEOUT" : "INTERNAL_SERVER_ERROR");
   const headers: Record<string, string> = { "Cache-Control": "no-store" };
   if (requestId) headers["x-request-id"] = requestId;
+  if (status === 409 && errCode === "IDEMPOTENCY_IN_PROGRESS") headers["Retry-After"] = "2";
+  if (status === 429 || status === 503) headers["Retry-After"] = "5";
   return NextResponse.json(
     {
       error: {
@@ -176,7 +178,7 @@ export async function POST(request: Request) {
     if (error instanceof AppHttpError) {
       logger.error("AI service error", { requestId, status: error.status, code: error.code, message: error.message });
       metrics.recordApiRequest("/api/extract", error.status, latencyMs);
-      return errorResponse(error.message, error.status, requestId);
+      return errorResponse(error.message, error.status, requestId, error.code);
     }
 
     metrics.recordApiRequest("/api/extract", 502, latencyMs);

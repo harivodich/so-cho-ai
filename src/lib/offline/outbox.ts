@@ -53,8 +53,8 @@ export function listOutbox(domain?: OutboxDomain, ownerId?: string | null): Outb
   return byDomain.filter((item) => operationOwner(item) === owner);
 }
 
-export function listDueOutbox(ownerId?: string | null): OutboxOperation[] {
-  const all = listOutbox(undefined, ownerId);
+export function listDueOutbox(domain?: OutboxDomain, ownerId?: string | null): OutboxOperation[] {
+  const all = listOutbox(domain, ownerId);
   const now = Date.now();
   return all.filter((item) => {
     if (!item.nextAttemptAt) return true;

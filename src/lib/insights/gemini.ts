@@ -52,11 +52,11 @@ export async function generateDailyInsight(
     headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     body: JSON.stringify({
-      system_instruction: { parts: [{ text: instruction }] },
-      contents: [{ parts: [{ text: `Dữ liệu tổng hợp do ứng dụng tính bằng code:\n${JSON.stringify(snapshot)}` }] }],
+      systemInstruction: { parts: [{ text: instruction }] },
+      contents: [{ role: "user", parts: [{ text: `Dữ liệu tổng hợp do ứng dụng tính bằng code:\n${JSON.stringify(snapshot)}` }] }],
       generationConfig: {
-        response_mime_type: "application/json",
-        response_schema: dailyInsightJsonSchema,
+        responseMimeType: "application/json",
+        responseSchema: dailyInsightJsonSchema,
       },
     }),
   });

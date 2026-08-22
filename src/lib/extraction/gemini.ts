@@ -75,14 +75,15 @@ export async function extractTransactionFromAudio(
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     body: JSON.stringify({
       contents: [{
+        role: "user",
         parts: [
           { text: `${transactionPrompt}\nNgày hiện tại của ứng dụng: ${input.currentDate}.` },
-          { inline_data: { mime_type: input.mimeType, data: input.audioBase64 } },
+          { inlineData: { mimeType: input.mimeType, data: input.audioBase64 } },
         ],
       }],
       generationConfig: {
-        response_mime_type: "application/json",
-        response_schema: transactionDraftsJsonSchema,
+        responseMimeType: "application/json",
+        responseSchema: transactionDraftsJsonSchema,
       },
     }),
   });
@@ -149,14 +150,15 @@ export async function extractTransactionsFromImage(
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     body: JSON.stringify({
       contents: [{
+        role: "user",
         parts: [
           { text: invoicePrompt + "\nApplication date: " + input.currentDate + "." },
-          { inline_data: { mime_type: input.mimeType, data: input.imageBase64 } },
+          { inlineData: { mimeType: input.mimeType, data: input.imageBase64 } },
         ],
       }],
       generationConfig: {
-        response_mime_type: "application/json",
-        response_schema: imageTransactionDraftsJsonSchema,
+        responseMimeType: "application/json",
+        responseSchema: imageTransactionDraftsJsonSchema,
       },
     }),
   });

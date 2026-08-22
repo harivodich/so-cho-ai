@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { configureFirebaseClient, getFirebaseClient, isFirebaseConfigured, type FirebaseWebConfig } from "@/lib/firebase/client";
 import { FirebaseCatalogRepository } from "@/lib/catalog/firebase-repository";
 import { LocalCatalogRepository, type CatalogRepository } from "@/lib/catalog/repository";
-import { clearOutboxForOwner, enqueueOutbox, listOutbox, removeOutbox } from "@/lib/offline/outbox";
+import { clearOutboxForOwner, enqueueOutbox, listOutbox, listDueOutbox, recordOutboxFailure, removeOutbox } from "@/lib/offline/outbox";
 import { canonicalizeItemName } from "@/types/transaction";
 import type { ConfirmedTransaction } from "@/types/transaction";
 import { buildTransactionStockMovement, transactionStockMovementId } from "@/lib/catalog/transaction-stock";
@@ -50,7 +50,8 @@ export function useCatalog(scope?: string | null) {
   const syncOutbox = useCallback(async () => {
     const repository = repositoryRef.current;
     if (!repository || repository.kind !== "firebase" || !window.navigator.onLine) return;
-    for (const operation of [...listOutbox("products", outboxOwner), ...listOutbox("stockMovements", outboxOwner)]) {
+    const dueOps = [...listDueOutbox("products", outboxOwner), ...listDueOutbox("stockMovements", outboxOwner)];
+    for (const operation of dueOps) {
       try {
         if (operation.domain === "products" && operation.action === "save") {
           await repository.saveProduct(operation.payload as Product);
@@ -60,7 +61,8 @@ export function useCatalog(scope?: string | null) {
           await repository.removeMovement(operation.key.replace("stockMovements:", ""));
         }
         removeOutbox(operation.key, outboxOwner);
-      } catch {
+      } catch (err) {
+        recordOutboxFailure(operation.key, err instanceof Error ? err.message : "SYNC_FAILED", outboxOwner);
         break;
       }
     }

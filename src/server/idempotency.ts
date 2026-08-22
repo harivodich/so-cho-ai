@@ -89,6 +89,16 @@ export type IdempotencyOptions = {
   ttlMs?: number;
 };
 
+export function validateIdempotencyKey(key: string): void {
+  const trimmed = key.trim();
+  if (trimmed.length < 1 || trimmed.length > 128) {
+    throw new AppHttpError(400, "INVALID_IDEMPOTENCY_KEY", "Idempotency-Key phải có độ dài từ 1 đến 128 ký tự.");
+  }
+  if (!/^[a-zA-Z0-9_\-.:]+$/.test(trimmed)) {
+    throw new AppHttpError(400, "INVALID_IDEMPOTENCY_KEY", "Idempotency-Key chỉ được chứa ký tự chữ cái, số, gạch nối (-), gạch dưới (_) hoặc dấu chấm (.).");
+  }
+}
+
 export type LockAcquireResult<T> =
   | { status: "acquired"; lockToken: string }
   | { status: "cached"; data: T }
@@ -155,9 +165,16 @@ export async function acquireDistributedLock<T>(
     });
   } catch (err) {
     if (err instanceof AppHttpError) throw err;
-    logger.warn("Distributed idempotency transaction unavailable, falling back to memory mode", {
+    logger.warn("Distributed idempotency transaction unavailable", {
       error: err instanceof Error ? err.message : String(err),
     });
+    if (process.env.NODE_ENV === "production") {
+      throw new AppHttpError(
+        503,
+        "IDEMPOTENCY_STORE_UNAVAILABLE",
+        "Hệ thống kiểm soát giao dịch trùng lặp tạm thời không khả dụng. Vui lòng thử lại sau.",
+      );
+    }
     const fallbackToken = `fb_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     return { status: "acquired", lockToken: fallbackToken };
   }
@@ -238,6 +255,8 @@ export async function withIdempotency<T>(
     const result = await operation();
     return { cached: false, data: result };
   }
+
+  validateIdempotencyKey(clientKey);
 
   const userId = options.userId ? options.userId.trim() : "anonymous";
   const route = options.route ? options.route.trim() : "general";
@@ -320,11 +339,11 @@ export async function withIdempotency<T>(
         }
       }
 
-      // If still processing by another instance, reject cleanly to prevent duplicate execution
+      // If still processing by another instance, reject cleanly with IDEMPOTENCY_IN_PROGRESS
       if (lockResult.status === "processing") {
         throw new AppHttpError(
           409,
-          "IDEMPOTENCY_KEY_REUSED",
+          "IDEMPOTENCY_IN_PROGRESS",
           "Yêu cầu tương tự đang được xử lý bởi hệ thống. Vui lòng thử lại sau giây lát.",
         );
       }

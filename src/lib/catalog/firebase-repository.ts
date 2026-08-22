@@ -50,9 +50,14 @@ export class FirebaseCatalogRepository implements CatalogRepository {
     const products = this.productsCollection();
     const movements = this.movementsCollection();
     const [productSnapshot, movementSnapshot] = await Promise.all([getDocs(products), getDocs(movements)]);
-    const batch = writeBatch(getFirebaseClient().db);
-    productSnapshot.docs.forEach((item) => batch.delete(item.ref));
-    movementSnapshot.docs.forEach((item) => batch.delete(item.ref));
-    await batch.commit();
+    const allDocs = [...productSnapshot.docs, ...movementSnapshot.docs];
+    const db = getFirebaseClient().db;
+    const CHUNK_SIZE = 450;
+    for (let i = 0; i < allDocs.length; i += CHUNK_SIZE) {
+      const chunk = allDocs.slice(i, i + CHUNK_SIZE);
+      const batch = writeBatch(db);
+      chunk.forEach((item) => batch.delete(item.ref));
+      await batch.commit();
+    }
   }
 }

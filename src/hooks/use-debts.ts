@@ -3,7 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { configureFirebaseClient, isFirebaseConfigured, type FirebaseWebConfig } from "@/lib/firebase/client";
-import { clearOutboxForOwner, enqueueOutbox, listOutbox, removeOutbox } from "@/lib/offline/outbox";
+import {
+  clearOutboxForOwner,
+  enqueueOutbox,
+  listOutbox,
+  listDueOutbox,
+  recordOutboxFailure,
+  removeOutbox,
+} from "@/lib/offline/outbox";
 import { FirebaseDebtRepository } from "@/lib/debts/firebase-repository";
 import { LocalDebtRepository, type DebtRepository } from "@/lib/debts/repository";
 import type { DebtEntry } from "@/types/debt";
@@ -35,13 +42,14 @@ export function useDebts(scope?: string | null) {
     const repository = repositoryRef.current;
     if (!repository || repository.kind !== "firebase" || !window.navigator.onLine) return;
     let changed = false;
-    for (const operation of listOutbox("debts", outboxOwner)) {
+    for (const operation of listDueOutbox("debts", outboxOwner)) {
       try {
         if (operation.action === "save") await repository.save(operation.payload as DebtEntry);
         else await repository.remove(operation.key.replace("debts:", ""));
         removeOutbox(operation.key, outboxOwner);
         changed = true;
-      } catch {
+      } catch (err) {
+        recordOutboxFailure(operation.key, err instanceof Error ? err.message : "SYNC_FAILED", outboxOwner);
         break;
       }
     }
@@ -64,7 +72,7 @@ export function useDebts(scope?: string | null) {
       setEntries([]);
       setError(null);
       setSyncPending(listOutbox("debts", outboxOwner).length);
-      setPersistence('loading');
+      setPersistence("loading");
     });
     fallbackRef.current = fallback;
     deviceFallbackRef.current = deviceFallback;
@@ -145,6 +153,7 @@ export function useDebts(scope?: string | null) {
     setSyncPending(listOutbox("debts", outboxOwner).length);
     setEntries([]);
   }, [outboxOwner]);
+
   const clearLocalForOwner = useCallback(async (ownerId: string) => {
     const normalizedOwner = ownerId.trim();
     if (!normalizedOwner) return;

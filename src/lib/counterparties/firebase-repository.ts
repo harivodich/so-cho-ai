@@ -28,8 +28,14 @@ export class FirebaseCounterpartyRepository implements CounterpartyRepository {
   async clear(): Promise<void> {
     const collectionRef = this.collectionRef();
     const snapshot = await getDocs(collectionRef);
-    const batch = writeBatch(getFirebaseClient().db);
-    snapshot.docs.forEach((item) => batch.delete(item.ref));
-    await batch.commit();
+    const db = getFirebaseClient().db;
+    const docs = snapshot.docs;
+    const CHUNK_SIZE = 450;
+    for (let i = 0; i < docs.length; i += CHUNK_SIZE) {
+      const chunk = docs.slice(i, i + CHUNK_SIZE);
+      const batch = writeBatch(db);
+      chunk.forEach((item) => batch.delete(item.ref));
+      await batch.commit();
+    }
   }
 }

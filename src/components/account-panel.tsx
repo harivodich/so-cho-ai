@@ -28,7 +28,7 @@ type ConfirmDialogState = {
   description: string;
   confirmLabel: string;
   variant: DialogVariant;
-  action: () => Promise<void>;
+  action: () => Promise<unknown> | void;
 };
 
 export function AccountPanel({
@@ -63,14 +63,16 @@ export function AccountPanel({
       ? { code: "auth/unknown", message: error, field: "form" }
       : error;
 
-  async function run(operation: () => Promise<void>) {
+  async function run(operation: () => Promise<void>, successMessage = "Đã cập nhật tài khoản."): Promise<boolean> {
     setBusy(true);
     setMessage(null);
     try {
       await operation();
-      setMessage("Đã cập nhật tài khoản.");
+      setMessage(successMessage);
+      return true;
     } catch {
-      // Auth hook owns the detailed error shown below.
+      // Auth hook owns the detailed error shown in the feedback banner.
+      return false;
     } finally {
       setBusy(false);
     }
@@ -83,7 +85,7 @@ export function AccountPanel({
         description: "Nếu tài khoản Google đã tồn tại, dữ liệu tạm trên thiết bị này sẽ không tự gộp. Bạn nên xuất bản sao lưu trước khi tiếp tục.",
         confirmLabel: "Tiếp tục với Google",
         variant: "warning",
-        action: () => run(onGoogle),
+        action: () => { void run(onGoogle); },
       });
       return;
     }
@@ -97,7 +99,7 @@ export function AccountPanel({
       description: "Đăng nhập tài khoản Google có sẵn sẽ chuyển sang UID khác và không gộp dữ liệu của phiên tạm. Hãy xuất bản sao lưu trước nếu bạn cần giữ sổ này.",
       confirmLabel: "Chuyển tài khoản",
       variant: "warning",
-      action: () => run(onGoogleExisting),
+      action: () => { void run(onGoogleExisting); },
     });
   }
 
@@ -113,7 +115,7 @@ export function AccountPanel({
         description: "Đăng nhập tài khoản đã có sẽ chuyển sang UID khác. Hãy xuất bản sao lưu trước nếu bạn cần giữ dữ liệu của phiên tạm.",
         confirmLabel: "Đăng nhập",
         variant: "warning",
-        action: () => run(() => onEmail(email, password, createAccount)),
+        action: () => { void run(() => onEmail(email, password, createAccount)); },
       });
       return;
     }
@@ -125,8 +127,10 @@ export function AccountPanel({
       setMessage("Nhập email trước khi yêu cầu đặt lại mật khẩu.");
       return;
     }
-    await run(() => onResetPassword(email));
-    setMessage("Đã gửi email đặt lại mật khẩu. Vui lòng kiểm tra hộp thư đến (và thư mục spam).");
+    await run(
+      () => onResetPassword(email),
+      "Đã gửi email đặt lại mật khẩu. Vui lòng kiểm tra hộp thư đến (và thư mục spam).",
+    );
   }
 
   function handleImportLocal() {
@@ -135,7 +139,7 @@ export function AccountPanel({
       description: `Nhập ${localImportCount} mục dữ liệu cũ đang lưu trên thiết bị này vào tài khoản đám mây? Dữ liệu trùng mã sẽ được cập nhật.`,
       confirmLabel: "Tiến hành nhập",
       variant: "info",
-      action: () => run(onImportLocal),
+      action: () => { void run(onImportLocal); },
     });
   }
 
@@ -145,7 +149,7 @@ export function AccountPanel({
       description: "Xóa tài khoản và toàn bộ dữ liệu giao dịch, công nợ, kho hàng của tài khoản này? Hành động này không thể hoàn tác.",
       confirmLabel: "Xóa tài khoản",
       variant: "danger",
-      action: () => run(onDelete),
+      action: () => { void run(onDelete); },
     });
   }
 

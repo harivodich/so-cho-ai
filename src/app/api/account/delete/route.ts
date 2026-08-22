@@ -7,10 +7,22 @@ import { metrics } from "@/server/observability/metrics";
 
 export const runtime = "nodejs";
 
-function errorResponse(message: string, status: number, requestId?: string) {
+function errorResponse(message: string, status: number, requestId?: string, code?: string) {
+  const errCode = code || (status === 401 ? "UNAUTHORIZED" : status === 403 ? "FORBIDDEN" : status === 503 ? "SERVICE_UNAVAILABLE" : "INTERNAL_SERVER_ERROR");
   const headers: Record<string, string> = { "Cache-Control": "no-store" };
   if (requestId) headers["x-request-id"] = requestId;
-  return NextResponse.json({ error: message }, { status, headers });
+  if (status === 503) headers["Retry-After"] = "5";
+  return NextResponse.json(
+    {
+      error: {
+        code: errCode,
+        message,
+        requestId: requestId || "unknown",
+      },
+      message,
+    },
+    { status, headers },
+  );
 }
 
 async function authenticatedUserId(request: Request, requestId: string): Promise<string | NextResponse> {

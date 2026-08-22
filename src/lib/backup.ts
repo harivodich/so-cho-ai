@@ -5,21 +5,23 @@ import { counterpartySchema, type Counterparty } from "@/types/counterparty";
 import { debtEntrySchema, type DebtEntry } from "@/types/debt";
 import { confirmedTransactionSchema, type ConfirmedTransaction } from "@/types/transaction";
 
+const MAX_BACKUP_ITEMS = 10_000;
+
 const backupSchema = z.object({
   version: z.literal(2),
   exportedAt: z.string().datetime(),
-  transactions: z.array(confirmedTransactionSchema),
-  debts: z.array(debtEntrySchema),
-  products: z.array(productSchema),
-  stockMovements: z.array(stockMovementSchema),
-  counterparties: z.array(counterpartySchema),
+  transactions: z.array(confirmedTransactionSchema).max(MAX_BACKUP_ITEMS, "Số lượng giao dịch vượt giới hạn sao lưu (10.000)."),
+  debts: z.array(debtEntrySchema).max(MAX_BACKUP_ITEMS, "Số lượng công nợ vượt giới hạn sao lưu (10.000)."),
+  products: z.array(productSchema).max(MAX_BACKUP_ITEMS, "Số lượng sản phẩm vượt giới hạn sao lưu (10.000)."),
+  stockMovements: z.array(stockMovementSchema).max(MAX_BACKUP_ITEMS, "Số lượng biến động kho vượt giới hạn sao lưu (10.000)."),
+  counterparties: z.array(counterpartySchema).max(MAX_BACKUP_ITEMS, "Số lượng đối tác vượt giới hạn sao lưu (10.000)."),
 });
 
 const legacyBackupSchema = z.object({
   version: z.literal(1),
   exportedAt: z.string().datetime(),
-  transactions: z.array(confirmedTransactionSchema),
-  debts: z.array(debtEntrySchema),
+  transactions: z.array(confirmedTransactionSchema).max(MAX_BACKUP_ITEMS),
+  debts: z.array(debtEntrySchema).max(MAX_BACKUP_ITEMS),
 });
 
 export type AppBackup = z.infer<typeof backupSchema>;

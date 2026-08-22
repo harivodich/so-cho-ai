@@ -40,8 +40,8 @@ describe("daily insight", () => {
     const body = JSON.parse(String((fetchMock.mock.calls[0][1] as RequestInit).body));
     expect(body.contents[0].parts[0].text).toContain('"revenue":400000');
     expect(body.contents[0].parts[0].text).not.toContain("itemName");
-    expect(body.generationConfig.response_mime_type).toBe("application/json");
-    expect(body.generationConfig.response_schema.additionalProperties).toBeUndefined();
+    expect(body.generationConfig.responseMimeType).toBe("application/json");
+    expect(body.generationConfig.responseSchema.additionalProperties).toBeUndefined();
     expect(String(fetchMock.mock.calls[0][0])).toContain("gemini-2.5-flash:generateContent");
   });
 

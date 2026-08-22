@@ -40,25 +40,25 @@ export class GeminiProvider implements AiProvider {
     const parts: Array<Record<string, unknown>> = [{ text: params.prompt }];
     if (params.inlineMedia) {
       parts.push({
-        inline_data: {
-          mime_type: params.inlineMedia.mimeType,
+        inlineData: {
+          mimeType: params.inlineMedia.mimeType,
           data: params.inlineMedia.dataBase64,
         },
       });
     }
 
     const payload: Record<string, unknown> = {
-      contents: [{ parts }],
+      contents: [{ role: "user", parts }],
       generationConfig: {
-        response_mime_type: "application/json",
+        responseMimeType: "application/json",
         temperature: params.modelConfig.temperature,
-        max_output_tokens: params.modelConfig.maxTokens,
-        ...(params.responseSchema ? { response_schema: params.responseSchema } : {}),
+        maxOutputTokens: params.modelConfig.maxTokens,
+        ...(params.responseSchema ? { responseSchema: params.responseSchema } : {}),
       },
     };
 
     if (params.systemInstruction) {
-      payload.system_instruction = {
+      payload.systemInstruction = {
         parts: [{ text: params.systemInstruction }],
       };
     }

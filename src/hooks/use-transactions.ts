@@ -8,7 +8,14 @@ import {
   isFirebaseConfigured,
   type FirebaseWebConfig,
 } from "@/lib/firebase/client";
-import { clearOutboxForOwner, listOutbox, enqueueOutbox, removeOutbox } from "@/lib/offline/outbox";
+import {
+  clearOutboxForOwner,
+  listOutbox,
+  listDueOutbox,
+  recordOutboxFailure,
+  enqueueOutbox,
+  removeOutbox,
+} from "@/lib/offline/outbox";
 import { FirebaseTransactionRepository } from "@/lib/transactions/firebase-repository";
 import { LocalTransactionRepository, type TransactionRepository } from "@/lib/transactions/repository";
 import type { ConfirmedTransaction } from "@/types/transaction";
@@ -67,7 +74,7 @@ export function useTransactions(scope?: string | null) {
     const repository = repositoryRef.current;
     if (!repository || repository.kind !== "firebase" || !window.navigator.onLine) return;
     let changed = false;
-    for (const operation of listOutbox("transactions", outboxOwner)) {
+    for (const operation of listDueOutbox("transactions", outboxOwner)) {
       try {
         if (operation.action === "save") {
           await repository.save(operation.payload as ConfirmedTransaction);
@@ -76,7 +83,8 @@ export function useTransactions(scope?: string | null) {
         }
         removeOutbox(operation.key, outboxOwner);
         changed = true;
-      } catch {
+      } catch (err) {
+        recordOutboxFailure(operation.key, err instanceof Error ? err.message : "SYNC_FAILED", outboxOwner);
         break;
       }
     }
@@ -100,7 +108,7 @@ export function useTransactions(scope?: string | null) {
       setLocalTransactionCount(0);
       setSyncPending(listOutbox("transactions", outboxOwner).length);
       setError(null);
-      setPersistence('loading');
+      setPersistence("loading");
     });
     fallbackRef.current = fallbackRepository;
     deviceFallbackRef.current = deviceFallbackRepository;
@@ -207,6 +215,7 @@ export function useTransactions(scope?: string | null) {
     await refreshDeviceLocalCount();
     setTransactions([]);
   }, [outboxOwner, refreshDeviceLocalCount]);
+
   const clearLocalForOwner = useCallback(async (ownerId: string) => {
     const normalizedOwner = ownerId.trim();
     if (!normalizedOwner) return;

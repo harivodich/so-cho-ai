@@ -52,8 +52,8 @@ describe("extractTransactionsFromImage", () => {
     expect(drafts).toHaveLength(2);
     const request = fetchMock.mock.calls[0][1] as RequestInit;
     const body = JSON.parse(String(request.body));
-    expect(body.contents[0].parts[1]).toMatchObject({ inline_data: { mime_type: "image/jpeg", data: "AA==" } });
-    expect(body.generationConfig.response_schema.maxItems).toBe(20);
+    expect(body.contents[0].parts[1]).toMatchObject({ inlineData: { mimeType: "image/jpeg", data: "AA==" } });
+    expect(body.generationConfig.responseSchema.maxItems).toBe(20);
     expect(String(body.contents[0].parts[0].text)).toContain("untrusted data");
   });
 });

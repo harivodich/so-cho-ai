@@ -5,7 +5,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { configureFirebaseClient, isFirebaseConfigured, type FirebaseWebConfig } from "@/lib/firebase/client";
 import { FirebaseCounterpartyRepository } from "@/lib/counterparties/firebase-repository";
 import { LocalCounterpartyRepository, type CounterpartyRepository } from "@/lib/counterparties/repository";
-import { enqueueOutbox, listOutbox, removeOutbox } from "@/lib/offline/outbox";
+import {
+  clearOutboxForOwner,
+  enqueueOutbox,
+  listOutbox,
+  listDueOutbox,
+  recordOutboxFailure,
+  removeOutbox,
+} from "@/lib/offline/outbox";
 import type { Counterparty } from "@/types/counterparty";
 
 type ConfigResponse = { configured: false } | { configured: true; firebase: FirebaseWebConfig };
@@ -34,17 +41,18 @@ export function useCounterparties(scope?: string | null) {
   const syncOutbox = useCallback(async () => {
     const repository = repositoryRef.current;
     if (!repository || repository.kind !== "firebase" || !window.navigator.onLine) return;
-    for (const operation of listOutbox("counterparties", outboxOwner)) {
+    for (const operation of listDueOutbox("counterparties", outboxOwner)) {
       try {
         if (operation.action === "save") {
           await repository.save(operation.payload as Counterparty);
         }
         removeOutbox(operation.key, outboxOwner);
-        setSyncPending(listOutbox("counterparties", outboxOwner).length);
-      } catch {
+      } catch (err) {
+        recordOutboxFailure(operation.key, err instanceof Error ? err.message : "SYNC_FAILED", outboxOwner);
         break;
       }
     }
+    setSyncPending(listOutbox("counterparties", outboxOwner).length);
     await reload();
   }, [outboxOwner, reload]);
 
@@ -134,7 +142,7 @@ export function useCounterparties(scope?: string | null) {
 
   const clearLocal = useCallback(async () => {
     await fallbackRef.current?.clear();
-    for (const operation of listOutbox("counterparties", outboxOwner)) removeOutbox(operation.key, outboxOwner);
+    clearOutboxForOwner(outboxOwner, "counterparties");
     setItems([]);
     setSyncPending(listOutbox("counterparties", outboxOwner).length);
   }, [outboxOwner]);
@@ -143,7 +151,7 @@ export function useCounterparties(scope?: string | null) {
     const normalizedOwner = ownerId.trim();
     if (!normalizedOwner) return;
     await new LocalCounterpartyRepository(normalizedOwner).clear();
-    for (const operation of listOutbox("counterparties", normalizedOwner)) removeOutbox(operation.key, normalizedOwner);
+    clearOutboxForOwner(normalizedOwner, "counterparties");
     if (normalizedOwner === outboxOwner) {
       setItems([]);
       setSyncPending(0);
@@ -155,7 +163,7 @@ export function useCounterparties(scope?: string | null) {
     if (!repository) return;
     await repository.clear();
     await fallbackRef.current?.clear();
-    for (const operation of listOutbox("counterparties", outboxOwner)) removeOutbox(operation.key, outboxOwner);
+    clearOutboxForOwner(outboxOwner, "counterparties");
     setItems([]);
     setSyncPending(listOutbox("counterparties", outboxOwner).length);
   }, [outboxOwner]);

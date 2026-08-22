@@ -32,8 +32,14 @@ export class FirebaseDebtRepository implements DebtRepository {
   async clear(): Promise<void> {
     const entries = this.entriesCollection();
     const snapshot = await getDocs(entries);
-    const batch = writeBatch(getFirebaseClient().db);
-    snapshot.docs.forEach((item) => batch.delete(item.ref));
-    await batch.commit();
+    const db = getFirebaseClient().db;
+    const docs = snapshot.docs;
+    const CHUNK_SIZE = 450;
+    for (let i = 0; i < docs.length; i += CHUNK_SIZE) {
+      const chunk = docs.slice(i, i + CHUNK_SIZE);
+      const batch = writeBatch(db);
+      chunk.forEach((item) => batch.delete(item.ref));
+      await batch.commit();
+    }
   }
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { enforceDailyInsightQuota, DailyInsightQuotaError } from "@/lib/insights/quota";
-import { dailyInsightSnapshotSchema } from "@/lib/insights/schema";
+import { dailyInsightSnapshotSchema, type DailyInsightSnapshot } from "@/lib/insights/schema";
 import { requireAuthenticatedUser } from "@/server/auth/require-user";
 import { extractOrGenerateRequestId } from "@/server/http/request-id";
 import { AppHttpError } from "@/server/http/errors";
@@ -12,11 +12,29 @@ import { aiApplicationService } from "@/server/ai/service";
 
 export const runtime = "nodejs";
 
+function validateInsightInvariants(data: DailyInsightSnapshot): string | null {
+  if (data.saleCount > data.transactionCount) {
+    return "Số lượng đơn bán không thể lớn hơn tổng số giao dịch.";
+  }
+  if (data.revenue < 0 || data.purchases < 0 || data.otherExpenses < 0 || data.estimatedCostOfGoods < 0) {
+    return "Doanh thu, chi phí và giá vốn không thể là số âm.";
+  }
+  if (data.estimatedGrossProfit !== null && data.missingCostSaleCount === 0) {
+    const expectedProfit = data.revenue - data.estimatedCostOfGoods;
+    if (Math.abs(data.estimatedGrossProfit - expectedProfit) > 1) {
+      return "Lợi nhuận gộp ước tính không khớp với doanh thu trừ giá vốn.";
+    }
+  }
+  return null;
+}
+
 function errorResponse(message: string, status: number, requestId?: string, code?: string) {
   // Security Contract Assertion: decoded.firebase?.sign_in_provider === "anonymous"
-  const errCode = code || (status === 400 ? "BAD_REQUEST" : status === 401 ? "UNAUTHORIZED" : status === 403 ? "FORBIDDEN" : status === 409 ? "IDEMPOTENCY_KEY_REUSED" : status === 413 ? "PAYLOAD_TOO_LARGE" : status === 422 ? "UNPROCESSABLE_ENTITY" : status === 429 ? "QUOTA_EXCEEDED" : status === 504 ? "GATEWAY_TIMEOUT" : "INTERNAL_SERVER_ERROR");
+  const errCode = code || (status === 400 ? "BAD_REQUEST" : status === 401 ? "UNAUTHORIZED" : status === 403 ? "FORBIDDEN" : status === 409 ? "IDEMPOTENCY_KEY_REUSED" : status === 413 ? "PAYLOAD_TOO_LARGE" : status === 422 ? "UNPROCESSABLE_ENTITY" : status === 429 ? "QUOTA_EXCEEDED" : status === 503 ? "SERVICE_UNAVAILABLE" : status === 504 ? "GATEWAY_TIMEOUT" : "INTERNAL_SERVER_ERROR");
   const headers: Record<string, string> = { "Cache-Control": "no-store" };
   if (requestId) headers["x-request-id"] = requestId;
+  if (status === 409 && errCode === "IDEMPOTENCY_IN_PROGRESS") headers["Retry-After"] = "2";
+  if (status === 429 || status === 503) headers["Retry-After"] = "5";
   return NextResponse.json(
     {
       error: {
@@ -46,7 +64,7 @@ export async function POST(request: Request) {
   } catch (err) {
     if (err instanceof AppHttpError) {
       metrics.recordApiRequest("/api/insights", err.status, Date.now() - startTime);
-      return errorResponse(err.message, err.status, requestId);
+      return errorResponse(err.message, err.status, requestId, err.code);
     }
     metrics.recordApiRequest("/api/insights", 503, Date.now() - startTime);
     return errorResponse("Server chưa thể xác thực Firebase. Hãy kiểm tra quyền Google Cloud của môi trường chạy ứng dụng.", 503, requestId);
@@ -70,6 +88,13 @@ export async function POST(request: Request) {
     logger.warn("Insight snapshot schema validation failed", { requestId, userId: user.uid });
     metrics.recordApiRequest("/api/insights", 422, Date.now() - startTime);
     return errorResponse("Số liệu tổng hợp không đúng cấu trúc.", 422, requestId);
+  }
+
+  const invariantError = validateInsightInvariants(snapshot.data);
+  if (invariantError) {
+    logger.warn("Insight snapshot invariant violation", { requestId, userId: user.uid, reason: invariantError });
+    metrics.recordApiRequest("/api/insights", 422, Date.now() - startTime);
+    return errorResponse(invariantError, 422, requestId, "INVALID_INSIGHT_INVARIANTS");
   }
 
   try {
@@ -113,7 +138,7 @@ export async function POST(request: Request) {
     if (error instanceof AppHttpError) {
       logger.error("Daily insight provider error", { requestId, code: error.code, message: error.message, status: error.status });
       metrics.recordApiRequest("/api/insights", error.status, latencyMs);
-      return errorResponse(error.message, error.status, requestId);
+      return errorResponse(error.message, error.status, requestId, error.code);
     }
 
     metrics.recordApiRequest("/api/insights", 502, latencyMs);
