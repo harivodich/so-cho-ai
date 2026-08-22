@@ -8,7 +8,7 @@ on:
 
 jobs:
   verify:
-    name: Lint, Test & Build
+    name: Lint, Typecheck, Test, Evidence & Build
     runs-on: ubuntu-latest
 
     steps:
@@ -27,8 +27,14 @@ jobs:
       - name: Run linter
         run: npm run lint
 
+      - name: Run TypeScript type check
+        run: npm run typecheck
+
       - name: Run test suite
         run: npm test
 
-      - name: Verify build
+      - name: Verify evaluation evidence
+        run: npm run verify:evidence
+
+      - name: Verify Next.js production build
         run: npm run build

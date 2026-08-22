@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { AppHttpError } from "@/server/http/errors";
 import { getFirebaseAdminDb } from "@/lib/firebase/admin";
+import { isFirebaseAdminConfigured } from "@/lib/firebase/admin-credentials";
 import { logger } from "@/server/observability/logger";
 
 export type IdempotencyRecord<T> = {
@@ -31,11 +32,7 @@ function isDistributedStoreEnabled(): boolean {
   if (process.env.NODE_ENV === "test") {
     return false;
   }
-  return Boolean(
-    process.env.GOOGLE_APPLICATION_CREDENTIALS ||
-    process.env.FIREBASE_SERVICE_ACCOUNT_JSON ||
-    process.env.GOOGLE_CLOUD_PROJECT,
-  );
+  return isFirebaseAdminConfigured();
 }
 
 export function computeCanonicalKey(
@@ -111,6 +108,13 @@ export async function acquireDistributedLock<T>(
   leaseMs = 30_000,
 ): Promise<LockAcquireResult<T>> {
   if (!isDistributedStoreEnabled()) {
+    if (process.env.NODE_ENV === "production") {
+      throw new AppHttpError(
+        503,
+        "IDEMPOTENCY_STORE_UNAVAILABLE",
+        "Hệ thống kiểm soát giao dịch trùng lặp phân tán chưa được kích hoạt trong môi trường production.",
+      );
+    }
     const memoryToken = `mem_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     return { status: "acquired", lockToken: memoryToken };
   }
@@ -247,6 +251,13 @@ export async function withIdempotency<T>(
   optionsOrKey: IdempotencyOptions | string | null | undefined,
   operation: () => Promise<T>,
 ): Promise<{ cached: boolean; data: T }> {
+  if (optionsOrKey !== undefined && optionsOrKey !== null) {
+    const rawKey = typeof optionsOrKey === "string" ? optionsOrKey : optionsOrKey.key;
+    if (rawKey !== undefined && rawKey !== null) {
+      validateIdempotencyKey(rawKey);
+    }
+  }
+
   const options: IdempotencyOptions =
     typeof optionsOrKey === "string" ? { key: optionsOrKey } : optionsOrKey ?? {};
 
@@ -255,8 +266,6 @@ export async function withIdempotency<T>(
     const result = await operation();
     return { cached: false, data: result };
   }
-
-  validateIdempotencyKey(clientKey);
 
   const userId = options.userId ? options.userId.trim() : "anonymous";
   const route = options.route ? options.route.trim() : "general";
@@ -362,7 +371,17 @@ export async function withIdempotency<T>(
         lockToken: acquiredToken,
       };
       memoryCache.set(scopedKey, completedRecord);
-      await completeDistributedLock(scopedKey, acquiredToken, currentRequestHash, data, ttlMs);
+      const isCompleted = await completeDistributedLock(scopedKey, acquiredToken, currentRequestHash, data, ttlMs);
+      if (!isCompleted && isDistributedStoreEnabled() && process.env.NODE_ENV === "production") {
+        logger.error("Failed to complete idempotency record in distributed store", {
+          scopedKey: scopedKey.slice(0, 16),
+        });
+        throw new AppHttpError(
+          503,
+          "IDEMPOTENCY_STORE_UNAVAILABLE",
+          "Không thể lưu kết quả kiểm soát giao dịch trùng lặp. Vui lòng thử lại sau.",
+        );
+      }
       return data;
     } catch (opError) {
       await failDistributedLock(scopedKey, acquiredToken);

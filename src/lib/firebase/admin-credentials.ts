@@ -21,7 +21,10 @@ function requiredString(value: unknown, field: string): string {
 export function readFirebaseAdminServiceAccount(
   environment: Environment = process.env,
 ): FirebaseAdminServiceAccount | null {
-  const serialized = environment.FIREBASE_ADMIN_SERVICE_ACCOUNT_JSON?.trim();
+  const serialized = (
+    environment.FIREBASE_ADMIN_SERVICE_ACCOUNT_JSON ||
+    environment.FIREBASE_SERVICE_ACCOUNT_JSON
+  )?.trim();
   if (!serialized) return null;
 
   let parsed: unknown;
@@ -45,4 +48,25 @@ export function readFirebaseAdminServiceAccount(
   }
 
   return { projectId, clientEmail, privateKey };
+}
+
+export function isFirebaseAdminConfigured(
+  environment: Environment = process.env,
+): boolean {
+  if (environment.TEST_DISTRIBUTED_IDEMPOTENCY === "true") {
+    return true;
+  }
+  if (Boolean(
+    environment.FIREBASE_ADMIN_SERVICE_ACCOUNT_JSON?.trim() ||
+    environment.FIREBASE_SERVICE_ACCOUNT_JSON?.trim()
+  )) {
+    return true;
+  }
+  if (Boolean(environment.GOOGLE_APPLICATION_CREDENTIALS?.trim())) {
+    return true;
+  }
+  if (Boolean(environment.GOOGLE_CLOUD_PROJECT?.trim() || environment.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.trim())) {
+    return true;
+  }
+  return false;
 }

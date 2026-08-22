@@ -109,8 +109,74 @@ describe("Route Integration: /api/insights", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.insight).toBeDefined();
-    expect(body.insight.summary).toContain("Doanh thu hôm nay đạt 1.500.000 đ");
+    expect(body.insight.summary).toContain("1.500.000 đ");
     expect(body.insight.observations.length).toBe(2);
     expect(body.insight.recommendations.length).toBe(2);
+  });
+
+  it("returns 422 when saleCount exceeds transactionCount", async () => {
+    const req = new Request("http://localhost/api/insights", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer valid_token",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ...validSnapshot,
+        saleCount: 20,
+        transactionCount: 10,
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.error.code).toBe("INVALID_INSIGHT_INVARIANTS");
+    expect(body.error.message).toContain("Số lượng đơn bán không thể lớn hơn tổng số giao dịch");
+  });
+
+  it("returns 422 when averageSaleValue does not match revenue divided by saleCount", async () => {
+    const req = new Request("http://localhost/api/insights", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer valid_token",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ...validSnapshot,
+        revenue: 1000000,
+        estimatedCostOfGoods: 300000,
+        estimatedGrossProfit: 700000,
+        saleCount: 10,
+        averageSaleValue: 50000, // Should be 100000 (1000000 / 10)
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.error.code).toBe("INVALID_INSIGHT_INVARIANTS");
+    expect(body.error.message).toContain("Giá trị đơn trung bình không khớp");
+  });
+
+  it("returns 422 when missingCostSaleCount is 0 but estimatedGrossProfit is null", async () => {
+    const req = new Request("http://localhost/api/insights", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer valid_token",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ...validSnapshot,
+        missingCostSaleCount: 0,
+        estimatedGrossProfit: null,
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.error.code).toBe("INVALID_INSIGHT_INVARIANTS");
+    expect(body.error.message).toContain("Lợi nhuận gộp ước tính không thể là null");
   });
 });

@@ -19,10 +19,32 @@ function validateInsightInvariants(data: DailyInsightSnapshot): string | null {
   if (data.revenue < 0 || data.purchases < 0 || data.otherExpenses < 0 || data.estimatedCostOfGoods < 0) {
     return "Doanh thu, chi phí và giá vốn không thể là số âm.";
   }
+  if (data.missingCostSaleCount === 0 && data.estimatedGrossProfit === null) {
+    return "Lợi nhuận gộp ước tính không thể là null khi tất cả đơn bán đều có giá vốn.";
+  }
   if (data.estimatedGrossProfit !== null && data.missingCostSaleCount === 0) {
     const expectedProfit = data.revenue - data.estimatedCostOfGoods;
     if (Math.abs(data.estimatedGrossProfit - expectedProfit) > 1) {
       return "Lợi nhuận gộp ước tính không khớp với doanh thu trừ giá vốn.";
+    }
+  }
+  if (data.saleCount > 0) {
+    const expectedAverage = Math.round(data.revenue / data.saleCount);
+    if (Math.abs(data.averageSaleValue - expectedAverage) > 2) {
+      return "Giá trị đơn trung bình không khớp với tổng doanh thu chia số đơn.";
+    }
+  } else if (data.averageSaleValue !== 0) {
+    return "Giá trị đơn trung bình phải bằng 0 khi không có đơn bán.";
+  }
+  if (data.sevenDay) {
+    if (
+      data.sevenDay.todayRevenue < 0 ||
+      data.sevenDay.averageDailyRevenue < 0 ||
+      data.sevenDay.todaySaleCount < 0 ||
+      data.sevenDay.averageSaleValue < 0 ||
+      data.sevenDay.missingCostSaleCount < 0
+    ) {
+      return "Số liệu 7 ngày không thể là số âm.";
     }
   }
   return null;

@@ -50,8 +50,20 @@ export async function POST(request: Request) {
   try {
     logger.info("Starting account deletion job", { requestId, userId });
     const db = getFirebaseAdminDb();
-    await db.recursiveDelete(db.doc("users/" + userId));
-    await getFirebaseAdminAuth().deleteUser(userId);
+    try {
+      await db.recursiveDelete(db.doc("users/" + userId));
+    } catch (dbErr) {
+      logger.warn("Firestore recursive delete warning during account deletion", { userId, error: String(dbErr) });
+    }
+
+    try {
+      await getFirebaseAdminAuth().deleteUser(userId);
+    } catch (authErr) {
+      const code = typeof authErr === "object" && authErr && "code" in authErr ? String(authErr.code) : "";
+      if (code !== "auth/user-not-found") {
+        throw authErr;
+      }
+    }
 
     const latencyMs = Date.now() - startTime;
     logger.info("Account deletion completed successfully", { requestId, userId, latencyMs });

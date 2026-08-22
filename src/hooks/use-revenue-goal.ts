@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore/lite";
 
 import { getFirebaseClient } from "@/lib/firebase/client";
-import { enqueueOutbox, listOutbox, removeOutbox } from "@/lib/offline/outbox";
+import { enqueueOutbox, listDueOutbox, recordOutboxFailure, removeOutbox } from "@/lib/offline/outbox";
 import { getRevenueGoal, getRevenueGoalsSnapshot, removeRevenueGoal, saveRevenueGoal } from "@/lib/revenue-goals";
 import { mergeRevenueGoalScopes } from "@/lib/revenue-goal-migration";
 
@@ -27,11 +27,16 @@ export function useRevenueGoal({ month, userId }: Props) {
 
   const syncOutbox = useCallback(async () => {
     if (!userId || !window.navigator.onLine) return;
-    for (const operation of listOutbox("revenueGoals", userId)) {
+    for (const operation of listDueOutbox("revenueGoals", userId)) {
       const payload = operation.payload as Partial<GoalOperation>;
       if (payload.userId !== userId || operation.action !== "save") continue;
-      await writeRemoteGoal(userId, payload.month ?? month, payload.amount ?? null);
-      removeOutbox(operation.key, userId);
+      try {
+        await writeRemoteGoal(userId, payload.month ?? month, payload.amount ?? null);
+        removeOutbox(operation.key, userId);
+      } catch (err) {
+        recordOutboxFailure(operation.key, err instanceof Error ? err.message : "SYNC_FAILED", userId);
+        break;
+      }
     }
   }, [month, userId]);
 

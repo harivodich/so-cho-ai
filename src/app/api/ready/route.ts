@@ -1,15 +1,11 @@
 import { NextResponse } from "next/server";
+import { isFirebaseAdminConfigured } from "@/lib/firebase/admin-credentials";
 
 export const runtime = "nodejs";
 
 export async function GET() {
   const hasGeminiKey = Boolean(process.env.GEMINI_API_KEY?.trim());
-  const hasFirebaseAdmin = Boolean(
-    process.env.FIREBASE_SERVICE_ACCOUNT_JSON ||
-    process.env.GOOGLE_APPLICATION_CREDENTIALS ||
-    process.env.GOOGLE_CLOUD_PROJECT ||
-    process.env.FIREBASE_CONFIG,
-  );
+  const hasFirebaseAdmin = isFirebaseAdminConfigured();
 
   const ready = hasGeminiKey && hasFirebaseAdmin;
   const status = ready ? 200 : 503;

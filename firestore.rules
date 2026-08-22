@@ -7,7 +7,17 @@ service cloud.firestore {
     }
 
     function ownsDocument(userId) {
-      return signedInAs(userId) && request.resource.data.userId == userId;
+      return signedInAs(userId)
+        && request.resource.data.userId == userId
+        && request.resource.data.keys().size() <= 30;
+    }
+
+    function validString(value, maxLen) {
+      return value is string && value.size() > 0 && value.size() <= maxLen;
+    }
+
+    function validNumber(value, min, max) {
+      return value is number && value >= min && value <= max;
     }
 
     match /users/{userId}/transactions/{transactionId} {
@@ -17,7 +27,11 @@ service cloud.firestore {
     }
 
     match /users/{userId}/profile/{document=**} {
-      allow read, write: if signedInAs(userId);
+      allow read: if signedInAs(userId);
+      allow write: if signedInAs(userId)
+        && request.resource.data.keys().size() <= 20
+        && (request.resource.data.displayName == null || validString(request.resource.data.displayName, 100))
+        && (request.resource.data.phone == null || validString(request.resource.data.phone, 30));
     }
 
     match /users/{userId}/debts/{debtId} {
@@ -45,7 +59,14 @@ service cloud.firestore {
     }
 
     match /users/{userId}/settings/{document=**} {
-      allow read, write: if signedInAs(userId);
+      allow read: if signedInAs(userId);
+      allow write: if signedInAs(userId)
+        && request.resource.data.keys().size() <= 20
+        && (request.resource.data.monthlyRevenueGoal == null || validNumber(request.resource.data.monthlyRevenueGoal, 0, 1000000000000));
+    }
+
+    match /idempotency_records/{recordId} {
+      allow read, write: if false; // Server-only Admin SDK access
     }
   }
 }
