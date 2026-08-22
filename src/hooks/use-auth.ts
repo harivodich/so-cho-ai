@@ -19,6 +19,8 @@ import {
   type FirebaseWebConfig,
 } from "@/lib/firebase/client";
 
+import { toAuthUiError, type AuthUiError } from "@/lib/firebase/auth-errors";
+
 type AuthConfigResponse =
   | { configured: false }
   | { configured: true; firebase: FirebaseWebConfig };
@@ -28,7 +30,9 @@ type AuthStatus = "loading" | "disabled" | "ready";
 export function useAuth() {
   const [status, setStatus] = useState<AuthStatus>("loading");
   const [user, setUser] = useState<User | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<AuthUiError | null>(null);
+
+  const clearError = useCallback(() => setError(null), []);
 
   useEffect(() => {
     let active = true;
@@ -47,7 +51,7 @@ export function useAuth() {
         try {
           await consumeFirebaseRedirectResult();
         } catch (reason) {
-          if (active) setError(reason instanceof Error ? reason.message : 'Không thể hoàn tất đăng nhập Google.');
+          if (active) setError(toAuthUiError(reason));
         }
         unsubscribe = subscribeFirebaseAuth((nextUser) => {
           if (!active) return;
@@ -55,13 +59,13 @@ export function useAuth() {
           setStatus("ready");
           if (nextUser) {
             void saveFirebaseUserProfile(nextUser).catch((reason) => {
-              if (active) setError(reason instanceof Error ? reason.message : "Không thể lưu hồ sơ tài khoản.");
+              if (active) setError(toAuthUiError(reason));
             });
           }
         });
       } catch (reason) {
         if (!active) return;
-        setError(reason instanceof Error ? reason.message : "Không thể khởi tạo đăng nhập.");
+        setError(toAuthUiError(reason));
         setStatus("disabled");
       }
     }
@@ -78,7 +82,7 @@ export function useAuth() {
     try {
       await operation();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Không thể hoàn tất thao tác tài khoản.");
+      setError(toAuthUiError(reason));
       throw reason;
     }
   }, []);
@@ -94,6 +98,7 @@ export function useAuth() {
   const deleteAccount = useCallback(() => run(deleteFirebaseUser), [run]);
 
   return {
+    clearError,
     deleteAccount,
     error,
     isLoading: status === "loading",

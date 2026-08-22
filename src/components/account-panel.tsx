@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useRef, type FormEvent } from "react";
 import type { User } from "firebase/auth";
 
 import { UiIcon } from "@/components/ui-icon";
 import { AccessibleDialog, type DialogVariant } from "@/components/ui/dialog";
+import type { AuthUiError } from "@/lib/firebase/auth-errors";
 
 type Props = {
   user: User | null;
   isLoading: boolean;
-  error: string | null;
+  error: string | AuthUiError | null;
   onGoogle: () => Promise<void>;
   onGoogleExisting: () => Promise<void>;
   onEmail: (email: string, password: string, create: boolean) => Promise<void>;
@@ -52,9 +53,15 @@ export function AccountPanel({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null);
+  const passwordInputRef = useRef<HTMLInputElement>(null);
 
   const canSignIn = !user || user.isAnonymous;
   const localImportCount = localDataCount ?? localTransactionCount;
+
+  const authError: AuthUiError | null =
+    typeof error === "string"
+      ? { code: "auth/unknown", message: error, field: "form" }
+      : error;
 
   async function run(operation: () => Promise<void>) {
     setBusy(true);
@@ -119,6 +126,7 @@ export function AccountPanel({
       return;
     }
     await run(() => onResetPassword(email));
+    setMessage("Đã gửi email đặt lại mật khẩu. Vui lòng kiểm tra hộp thư đến (và thư mục spam).");
   }
 
   function handleImportLocal() {
@@ -139,6 +147,14 @@ export function AccountPanel({
       variant: "danger",
       action: () => run(onDelete),
     });
+  }
+
+  function switchToLoginMode() {
+    setCreateAccount(false);
+    setMessage(null);
+    setTimeout(() => {
+      passwordInputRef.current?.focus();
+    }, 50);
   }
 
   return (
@@ -167,7 +183,7 @@ export function AccountPanel({
             disabled={isLoading || busy}
             onClick={handleGoogleLogin}
           >
-            <UiIcon name="check" size={18} /> Tiếp tục với Google
+            <UiIcon name="check" size={18} /> {busy ? "Đang xử lý..." : "Tiếp tục với Google"}
           </button>
           {user?.isAnonymous ? (
             <button
@@ -196,7 +212,7 @@ export function AccountPanel({
           </p>
           {user.email && !user.emailVerified ? (
             <button className="secondary-button" type="button" disabled={busy} onClick={() => void run(onVerifyEmail)}>
-              Gửi lại email xác minh
+              {busy ? "Đang gửi..." : "Gửi lại email xác minh"}
             </button>
           ) : null}
           {localImportCount > 0 ? (
@@ -226,6 +242,8 @@ export function AccountPanel({
               autoComplete="email"
               type="email"
               value={email}
+              aria-invalid={authError?.field === "email"}
+              aria-describedby={authError ? "auth-feedback-msg" : undefined}
               onChange={(event) => setEmail(event.target.value)}
               placeholder="ban@example.com"
             />
@@ -233,10 +251,13 @@ export function AccountPanel({
           <label>
             <span className="field-label">Mật khẩu</span>
             <input
+              ref={passwordInputRef}
               autoComplete={createAccount ? "new-password" : "current-password"}
               minLength={6}
               type="password"
               value={password}
+              aria-invalid={authError?.field === "password"}
+              aria-describedby={authError ? "auth-feedback-msg" : undefined}
               onChange={(event) => setPassword(event.target.value)}
               placeholder="Ít nhất 6 ký tự"
             />
@@ -247,7 +268,7 @@ export function AccountPanel({
             </p>
           ) : null}
           <button className="primary-button" type="submit" disabled={busy}>
-            {createAccount ? "Tạo tài khoản" : "Đăng nhập"}
+            {busy ? (createAccount ? "Đang tạo tài khoản..." : "Đang đăng nhập...") : (createAccount ? "Tạo tài khoản" : "Đăng nhập")}
           </button>
           <div className="account-form-links">
             <button className="text-button" type="button" onClick={() => setCreateAccount((value) => !value)}>
@@ -262,8 +283,47 @@ export function AccountPanel({
         </form>
       ) : null}
 
+      {/* Structured Friendly Auth Feedback */}
+      {authError ? (
+        <div className="auth-feedback-box is-error" role="alert">
+          <div className="auth-feedback-header">
+            <UiIcon name="alert" size={18} />
+            <span id="auth-feedback-msg">{authError.message}</span>
+          </div>
+          {authError.action === "switch-to-login" && createAccount ? (
+            <div className="auth-feedback-actions">
+              <button
+                type="button"
+                className="secondary-button feedback-action-btn"
+                onClick={switchToLoginMode}
+              >
+                Chuyển sang Đăng nhập
+              </button>
+              <button
+                type="button"
+                className="text-button feedback-action-btn"
+                onClick={() => void resetPassword()}
+                disabled={busy}
+              >
+                Đặt lại mật khẩu
+              </button>
+            </div>
+          ) : authError.action === "reset-password" ? (
+            <div className="auth-feedback-actions">
+              <button
+                type="button"
+                className="secondary-button feedback-action-btn"
+                onClick={() => void resetPassword()}
+                disabled={busy}
+              >
+                Gửi email đặt lại mật khẩu
+              </button>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
       {message ? <p className="account-message" role="status">{message}</p> : null}
-      {error ? <p className="form-error" role="alert"><UiIcon name="alert" size={18} />{error}</p> : null}
 
       {/* Accessible Confirmation Modal Dialog */}
       <AccessibleDialog
