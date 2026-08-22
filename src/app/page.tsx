@@ -419,13 +419,13 @@ export default function HomePage() {
               {!online ? "Ngoại tuyến" : persistence === "local" ? "Dữ liệu máy" : syncPending > 0 ? `Đang đồng bộ (${syncPending})` : "Đã đồng bộ"}
             </span>
             <button
-              className="text-button account-trigger"
+              className={`account-trigger ${accountOpen ? "is-active" : ""}`}
               type="button"
               onClick={() => setAccountOpen(!accountOpen)}
               aria-expanded={accountOpen}
               aria-controls="account-panel"
             >
-              <UiIcon name="pencil" size={16} />
+              <UiIcon name="user" size={15} />
               Tài khoản
             </button>
           </div>

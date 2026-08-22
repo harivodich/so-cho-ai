@@ -1440,8 +1440,39 @@ footer p {
 
 .account-trigger {
   min-height: 44px;
-  padding: 7px 11px;
-  font-size: 0.76rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-full);
+  background: #ffffff;
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: all 180ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.account-trigger:hover {
+  transform: translateY(-1px);
+  border-color: var(--green-line);
+  color: var(--green-dark);
+  box-shadow: var(--shadow);
+}
+
+.account-trigger:active {
+  transform: translateY(0);
+}
+
+.account-trigger.is-active,
+.account-trigger[aria-expanded="true"] {
+  border-color: var(--green-line);
+  background: var(--green-soft);
+  color: var(--green-dark);
+  box-shadow: 0 0 0 2px rgba(15, 107, 74, 0.15);
 }
 
 .account-panel-drawer {
