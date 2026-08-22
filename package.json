@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "verify": "npm run lint && npm test && npm run build",
     "eval:text:fixture": "node evaluation/scripts/generate-text-fixture.mjs && node evaluation/scripts/run-text-eval.mjs --fixture evaluation/fixtures/text-eval-perfect.jsonl",
     "eval:text": "node evaluation/scripts/run-text-eval.mjs",
     "eval:text:publish": "node evaluation/scripts/run-text-eval.mjs && node evaluation/scripts/publish-text-report.mjs",

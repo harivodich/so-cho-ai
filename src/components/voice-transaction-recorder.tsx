@@ -12,7 +12,7 @@ const TARGET_SAMPLE_RATE = 16_000;
 type RecorderStatus = "ready" | "recording" | "preview" | "analyzing";
 
 type VoiceTransactionRecorderProps = {
-  onAnalyze: (audio: File) => Promise<void>;
+  onAnalyze: (audio: File, isRetry?: boolean) => Promise<void>;
   onCancel: () => void;
 };
 
@@ -197,6 +197,7 @@ export function VoiceTransactionRecorder({ onAnalyze, onCancel }: VoiceTransacti
 
   function discardRecording() {
     setError(null);
+    setAnalysisAttempts(0);
     clearTimers();
     if (recorderRef.current?.state === "recording" || recorderRef.current?.state === "paused") {
       discardOnStopRef.current = true;
@@ -210,12 +211,13 @@ export function VoiceTransactionRecorder({ onAnalyze, onCancel }: VoiceTransacti
 
   async function analyzeRecording() {
     if (!recording || !canAnalyzeRecording(analysisAttempts)) return;
+    const isRetry = analysisAttempts > 0;
     setStatus("analyzing");
     setError(null);
     try {
       const wavFile = await convertToWav(recording);
       setAnalysisAttempts((attempts) => attempts + 1);
-      await onAnalyze(wavFile);
+      await onAnalyze(wavFile, isRetry);
     } catch (reason) {
       setStatus("preview");
       setError(reason instanceof Error ? reason.message : "Không thể phân tích audio. Bạn có thể thử lại một lần, ghi lại hoặc nhập tay.");

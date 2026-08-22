@@ -7,7 +7,7 @@ import { UiIcon } from "@/components/ui-icon";
 import { MAX_IMAGE_BYTES, validateImageUpload } from "@/lib/extraction/image-validation";
 
 type Props = {
-  onAnalyze: (image: File) => Promise<void>;
+  onAnalyze: (image: File, isRetry?: boolean) => Promise<void>;
   onCancel: () => void;
 };
 
@@ -20,18 +20,21 @@ export function ImageTransactionUploader({ onAnalyze, onCancel }: Props) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [status, setStatus] = useState<Status>("ready");
   const [error, setError] = useState<string | null>(null);
+  const [attempts, setAttempts] = useState(0);
 
   function clearPreview() {
     if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
     previewUrlRef.current = null;
     setPreviewUrl(null);
     setImage(null);
+    setAttempts(0);
   }
 
   function chooseImage(event: React.ChangeEvent<HTMLInputElement>) {
     const nextImage = event.target.files?.[0] ?? null;
     event.target.value = "";
     setError(null);
+    setAttempts(0);
     if (!nextImage) return;
 
     const validation = validateImageUpload(nextImage.size, nextImage.type);
@@ -51,10 +54,12 @@ export function ImageTransactionUploader({ onAnalyze, onCancel }: Props) {
 
   async function analyze() {
     if (!image || status === "analyzing") return;
+    const isRetry = attempts > 0;
     setStatus("analyzing");
     setError(null);
     try {
-      await onAnalyze(image);
+      setAttempts((prev) => prev + 1);
+      await onAnalyze(image, isRetry);
     } catch (reason) {
       setStatus("preview");
       setError(reason instanceof Error ? reason.message : "Không thể phân tích ảnh. Hãy thử ảnh khác hoặc nhập tay.");

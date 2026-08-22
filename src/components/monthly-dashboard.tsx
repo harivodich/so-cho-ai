@@ -163,7 +163,7 @@ export function PeriodDashboard({
           <>
             <div
               className="monthly-chart interactive-chart"
-              role="img"
+              role="region"
               aria-label={`Biểu đồ doanh thu theo ngày trong ${title}. Cao nhất ${formatVnd(bestRevenueDay.revenue)} vào ${formatVietnameseDate(bestRevenueDay.date)}.`}
             >
               <svg viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} preserveAspectRatio="none">
@@ -205,7 +205,7 @@ export function PeriodDashboard({
                       <g
                         key={day.date}
                         className="chart-bar-group"
-                        style={{ cursor: "pointer", outline: "none" }}
+                        style={{ cursor: "pointer" }}
                         tabIndex={0}
                         role="button"
                         aria-label={`${formatVietnameseDate(day.date)}: ${formatVnd(day.revenue)} (${day.transactionCount} giao dịch)`}
@@ -257,19 +257,16 @@ export function PeriodDashboard({
                     );
                   })
                 ) : (
-                  // Line Chart View with full keyboard accessibility
+                  // Line Chart View with full keyboard accessibility and 44px hit-target
                   <>
                     <polyline className="chart-line" points={linePoints} />
                     {chartPoints.map((point) => {
                       const isBest = bestRevenueDay?.date === point.date;
                       const isSelected = activeDay?.date === point.date;
                       return (
-                        <circle
+                        <g
                           key={point.date}
-                          className={`chart-interactive-point ${isBest ? "is-best" : ""} ${isSelected ? "is-selected" : ""}`}
-                          cx={point.x}
-                          cy={point.y}
-                          r={isSelected ? 6 : isBest ? 5 : 3.5}
+                          className="chart-interactive-point-group"
                           tabIndex={0}
                           role="button"
                           aria-label={`${formatVietnameseDate(point.date)}: ${formatVnd(point.revenue)} (${point.transactionCount} giao dịch)`}
@@ -286,11 +283,20 @@ export function PeriodDashboard({
                           }}
                           onMouseEnter={() => setActiveDay(point)}
                           onMouseLeave={() => setActiveDay(null)}
-                          fill={isSelected ? "#059669" : isBest ? "#10b981" : "#0f6b4a"}
-                          stroke="#ffffff"
-                          strokeWidth={1.5}
-                          style={{ cursor: "pointer", outline: "none" }}
-                        />
+                          style={{ cursor: "pointer" }}
+                        >
+                          {/* 44px minimum hit-target for touch */}
+                          <circle cx={point.x} cy={point.y} r={22} fill="transparent" />
+                          <circle
+                            className={`chart-interactive-point ${isBest ? "is-best" : ""} ${isSelected ? "is-selected" : ""}`}
+                            cx={point.x}
+                            cy={point.y}
+                            r={isSelected ? 6 : isBest ? 5 : 3.5}
+                            fill={isSelected ? "#059669" : isBest ? "#10b981" : "#0f6b4a"}
+                            stroke="#ffffff"
+                            strokeWidth={1.5}
+                          />
+                        </g>
                       );
                     })}
                   </>
@@ -312,18 +318,26 @@ export function PeriodDashboard({
         )}
 
         <details className="monthly-data-details">
-          <summary>Xem doanh thu từng ngày</summary>
-          <ul>
-            {report.dailyRevenue.map((day) => (
-              <li key={day.date} className={bestRevenueDay?.date === day.date ? "best-day-item" : undefined}>
-                <span>
-                  {formatVietnameseDate(day.date)}
-                  {bestRevenueDay?.date === day.date ? " (Cao nhất)" : ""}
-                </span>
-                <strong>{formatVnd(day.revenue)}</strong>
-              </li>
-            ))}
-          </ul>
+          <summary>Xem bảng số liệu chi tiết</summary>
+          <table className="accessible-data-table">
+            <caption className="visually-hidden">Bảng doanh thu từng ngày trong tháng</caption>
+            <thead>
+              <tr>
+                <th scope="col">Ngày</th>
+                <th scope="col">Doanh thu</th>
+                <th scope="col">Ghi chú</th>
+              </tr>
+            </thead>
+            <tbody>
+              {report.dailyRevenue.map((day) => (
+                <tr key={day.date} className={bestRevenueDay?.date === day.date ? "best-day-row" : undefined}>
+                  <td>{formatVietnameseDate(day.date)}</td>
+                  <td><strong>{formatVnd(day.revenue)}</strong></td>
+                  <td>{bestRevenueDay?.date === day.date ? "Ngày cao nhất" : `${day.transactionCount} giao dịch`}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </details>
       </section>
 

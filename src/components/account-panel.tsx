@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import type { User } from "firebase/auth";
 
 import { UiIcon } from "@/components/ui-icon";
+import { AccessibleDialog, type DialogVariant } from "@/components/ui/dialog";
 
 type Props = {
   user: User | null;
@@ -19,6 +20,14 @@ type Props = {
   onImportLocal: () => Promise<void>;
   localTransactionCount: number;
   localDataCount?: number;
+};
+
+type ConfirmDialogState = {
+  title: string;
+  description: string;
+  confirmLabel: string;
+  variant: DialogVariant;
+  action: () => Promise<void>;
 };
 
 export function AccountPanel({
@@ -42,6 +51,8 @@ export function AccountPanel({
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null);
+
   const canSignIn = !user || user.isAnonymous;
   const localImportCount = localDataCount ?? localTransactionCount;
 
@@ -58,22 +69,29 @@ export function AccountPanel({
     }
   }
 
-  async function continueWithGoogle() {
+  function handleGoogleLogin() {
     if (user?.isAnonymous) {
-      const confirmed = window.confirm(
-        "Nếu tài khoản Google đã tồn tại, dữ liệu tạm sẽ không tự gộp. Hãy xuất backup trước khi tiếp tục.",
-      );
-      if (!confirmed) return;
+      setConfirmDialog({
+        title: "Chuyển đổi sang tài khoản Google",
+        description: "Nếu tài khoản Google đã tồn tại, dữ liệu tạm trên thiết bị này sẽ không tự gộp. Bạn nên xuất bản sao lưu trước khi tiếp tục.",
+        confirmLabel: "Tiếp tục với Google",
+        variant: "warning",
+        action: () => run(onGoogle),
+      });
+      return;
     }
-    await run(onGoogle);
+    void run(onGoogle);
   }
 
-  async function continueWithExistingGoogle() {
-    const confirmed = window.confirm(
-      "Đăng nhập Google hiện có sẽ chuyển sang UID khác và không gộp dữ liệu phiên tạm. Hãy xuất backup trước khi tiếp tục.",
-    );
-    if (!confirmed) return;
-    await run(onGoogleExisting);
+  function handleExistingGoogleLogin() {
+    // Note: Replaced raw window.confirm with AccessibleDialog for accessibility
+    setConfirmDialog({
+      title: "Đăng nhập Google hiện có",
+      description: "Đăng nhập tài khoản Google có sẵn sẽ chuyển sang UID khác và không gộp dữ liệu của phiên tạm. Hãy xuất bản sao lưu trước nếu bạn cần giữ sổ này.",
+      confirmLabel: "Chuyển tài khoản",
+      variant: "warning",
+      action: () => run(onGoogleExisting),
+    });
   }
 
   async function submitEmail(event: FormEvent<HTMLFormElement>) {
@@ -83,10 +101,14 @@ export function AccountPanel({
       return;
     }
     if (user?.isAnonymous && !createAccount) {
-      const confirmed = window.confirm(
-        "Đăng nhập tài khoản đã có sẽ chuyển sang UID khác. Hãy xuất backup trước nếu bạn cần giữ dữ liệu của phiên tạm. Tiếp tục?",
-      );
-      if (!confirmed) return;
+      setConfirmDialog({
+        title: "Đăng nhập tài khoản Email",
+        description: "Đăng nhập tài khoản đã có sẽ chuyển sang UID khác. Hãy xuất bản sao lưu trước nếu bạn cần giữ dữ liệu của phiên tạm.",
+        confirmLabel: "Đăng nhập",
+        variant: "warning",
+        action: () => run(() => onEmail(email, password, createAccount)),
+      });
+      return;
     }
     await run(() => onEmail(email, password, createAccount));
   }
@@ -99,14 +121,24 @@ export function AccountPanel({
     await run(() => onResetPassword(email));
   }
 
-  async function importLocal() {
-    if (!window.confirm("Import older device data into this account? Records with matching IDs will be updated.")) return;
-    await run(onImportLocal);
+  function handleImportLocal() {
+    setConfirmDialog({
+      title: "Nhập dữ liệu từ thiết bị",
+      description: `Nhập ${localImportCount} mục dữ liệu cũ đang lưu trên thiết bị này vào tài khoản đám mây? Dữ liệu trùng mã sẽ được cập nhật.`,
+      confirmLabel: "Tiến hành nhập",
+      variant: "info",
+      action: () => run(onImportLocal),
+    });
   }
 
-  async function deleteAccount() {
-    if (!window.confirm("Xóa tài khoản và toàn bộ dữ liệu của tài khoản này? Hành động không thể hoàn tác.")) return;
-    await run(onDelete);
+  function handleDeleteAccount() {
+    setConfirmDialog({
+      title: "Xóa vĩnh viễn tài khoản",
+      description: "Xóa tài khoản và toàn bộ dữ liệu giao dịch, công nợ, kho hàng của tài khoản này? Hành động này không thể hoàn tác.",
+      confirmLabel: "Xóa tài khoản",
+      variant: "danger",
+      action: () => run(onDelete),
+    });
   }
 
   return (
@@ -133,7 +165,7 @@ export function AccountPanel({
             className="primary-button account-google-button"
             type="button"
             disabled={isLoading || busy}
-            onClick={() => void continueWithGoogle()}
+            onClick={handleGoogleLogin}
           >
             <UiIcon name="check" size={18} /> Tiếp tục với Google
           </button>
@@ -142,7 +174,7 @@ export function AccountPanel({
               className="secondary-button"
               type="button"
               disabled={isLoading || busy}
-              onClick={() => void continueWithExistingGoogle()}
+              onClick={handleExistingGoogleLogin}
             >
               Đăng nhập Google hiện có
             </button>
@@ -170,7 +202,7 @@ export function AccountPanel({
           {localImportCount > 0 ? (
             <div className="account-import-notice">
               <span>Có {localImportCount} mục dữ liệu cũ đang lưu trên thiết bị này.</span>
-              <button className="primary-button" type="button" disabled={busy} onClick={() => void importLocal()}>
+              <button className="primary-button" type="button" disabled={busy} onClick={handleImportLocal}>
                 Nhập vào tài khoản
               </button>
             </div>
@@ -179,7 +211,7 @@ export function AccountPanel({
             <button className="secondary-button" type="button" disabled={busy} onClick={() => void run(onSignOut)}>
               Đăng xuất
             </button>
-            <button className="danger-button account-delete-button" type="button" disabled={busy} onClick={() => void deleteAccount()}>
+            <button className="danger-button account-delete-button" type="button" disabled={busy} onClick={handleDeleteAccount}>
               Xóa tài khoản
             </button>
           </div>
@@ -232,6 +264,38 @@ export function AccountPanel({
 
       {message ? <p className="account-message" role="status">{message}</p> : null}
       {error ? <p className="form-error" role="alert"><UiIcon name="alert" size={18} />{error}</p> : null}
+
+      {/* Accessible Confirmation Modal Dialog */}
+      <AccessibleDialog
+        isOpen={Boolean(confirmDialog)}
+        onClose={() => setConfirmDialog(null)}
+        title={confirmDialog?.title ?? "Xác nhận"}
+        description={confirmDialog?.description}
+        variant={confirmDialog?.variant ?? "default"}
+      >
+        <div className="modal-confirm-actions">
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => setConfirmDialog(null)}
+            disabled={busy}
+          >
+            Hủy bỏ
+          </button>
+          <button
+            type="button"
+            className={confirmDialog?.variant === "danger" ? "danger-button" : "primary-button"}
+            onClick={async () => {
+              const currentAction = confirmDialog?.action;
+              setConfirmDialog(null);
+              if (currentAction) await currentAction();
+            }}
+            disabled={busy}
+          >
+            {confirmDialog?.confirmLabel ?? "Đồng ý"}
+          </button>
+        </div>
+      </AccessibleDialog>
     </section>
   );
 }

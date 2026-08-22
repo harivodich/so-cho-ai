@@ -1973,7 +1973,8 @@ footer p {
 }
 
 .debt-item.is-overdue-card {
-  border-left: 4px solid #ef4444;
+  border-color: #fca5a5;
+  background: #fef2f2;
 }
 
 .debt-item-header {
@@ -2204,13 +2205,36 @@ footer p {
   100% { background-position: 200% 0; }
 }
 
-@keyframes ambientPulse {
-  0%, 100% { box-shadow: 0 8px 24px rgba(15, 107, 74, 0.08); }
-  50% { box-shadow: 0 12px 32px rgba(15, 107, 74, 0.2); }
+/* Chart Keyboard Focus & Table Accessibility */
+.chart-bar-group:focus-visible,
+.chart-interactive-point-group:focus-visible {
+  outline: 2.5px solid var(--green);
+  outline-offset: 2px;
 }
 
-.ambient-glow-card {
-  animation: ambientPulse 4s ease-in-out infinite;
+.accessible-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+  font-size: 0.85rem;
+}
+
+.accessible-data-table th,
+.accessible-data-table td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+
+.accessible-data-table th {
+  background: var(--surface-subtle);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.accessible-data-table tr.best-day-row {
+  background: #f0fdf4;
+  font-weight: 700;
 }
 
 /* Quick Amount Section */

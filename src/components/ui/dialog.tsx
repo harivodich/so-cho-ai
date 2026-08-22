@@ -3,6 +3,8 @@
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { UiIcon } from "@/components/ui-icon";
 
+export type DialogVariant = "default" | "danger" | "warning" | "info";
+
 type Props = {
   isOpen: boolean;
   onClose: () => void;
@@ -10,6 +12,7 @@ type Props = {
   description?: string;
   children: ReactNode;
   maxWidth?: string;
+  variant?: DialogVariant;
 };
 
 export function AccessibleDialog({
@@ -19,6 +22,7 @@ export function AccessibleDialog({
   description,
   children,
   maxWidth = "540px",
+  variant = "default",
 }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
@@ -34,10 +38,13 @@ export function AccessibleDialog({
       if (!dialog.open) {
         dialog.showModal();
       }
-    } else {
-      if (dialog.open) {
-        dialog.close();
-      }
+      // Set initial focus to the first focusable interactive element inside the dialog
+      const firstFocusable = dialog.querySelector<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      firstFocusable?.focus?.();
+    } else if (dialog.open) {
+      dialog.close();
       previousActiveElement.current?.focus?.();
     }
   }, [isOpen]);
@@ -50,7 +57,12 @@ export function AccessibleDialog({
       }
     };
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      if (isOpen) {
+        previousActiveElement.current?.focus?.();
+      }
+    };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
@@ -58,10 +70,14 @@ export function AccessibleDialog({
   return (
     <dialog
       ref={dialogRef}
-      className="accessible-modal-dialog"
+      className={`accessible-modal-dialog variant-${variant}`}
       style={{ maxWidth }}
       onClick={(e) => {
         if (e.target === dialogRef.current) onClose();
+      }}
+      onCancel={(e) => {
+        e.preventDefault();
+        onClose();
       }}
       aria-labelledby={titleId}
       aria-describedby={description ? descId : undefined}

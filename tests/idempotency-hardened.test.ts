@@ -88,4 +88,31 @@ describe("Hardened Idempotency & Concurrency Security", () => {
     expect(res1.cached).toBe(false);
     expect(res2.cached).toBe(true);
   });
+
+  it("prevents key collisions between different users or routes with matching client keys", async () => {
+    clearIdempotencyCache();
+    const commonClientKey = "shared-uuid-12345";
+
+    const resUser1 = await withIdempotency(
+      { userId: "user_alpha", route: "/api/extract", key: commonClientKey, payload: { audio: "a.wav" } },
+      async () => "alpha_result",
+    );
+
+    const resUser2 = await withIdempotency(
+      { userId: "user_beta", route: "/api/extract", key: commonClientKey, payload: { audio: "b.wav" } },
+      async () => "beta_result",
+    );
+
+    const resRoute2 = await withIdempotency(
+      { userId: "user_alpha", route: "/api/insights", key: commonClientKey, payload: { snap: "s" } },
+      async () => "insights_result",
+    );
+
+    expect(resUser1.data).toBe("alpha_result");
+    expect(resUser2.data).toBe("beta_result");
+    expect(resRoute2.data).toBe("insights_result");
+    expect(resUser1.cached).toBe(false);
+    expect(resUser2.cached).toBe(false);
+    expect(resRoute2.cached).toBe(false);
+  });
 });

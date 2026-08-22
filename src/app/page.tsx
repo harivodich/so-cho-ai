@@ -84,7 +84,11 @@ function newTransactionId(): string {
 }
 
 function extractionError(payload: ExtractResponse | null): string | null {
-  return typeof payload?.error === "string" ? payload.error : null;
+  if (typeof payload?.error === "string") return payload.error;
+  if (payload?.error && typeof payload.error === "object" && "message" in payload.error) {
+    return String((payload.error as { message: unknown }).message);
+  }
+  return null;
 }
 
 export default function HomePage() {
@@ -156,7 +160,7 @@ export default function HomePage() {
     setEditing(null);
     setDraft(null);
     setPendingImageDrafts([]);
-    currentVoiceKeyRef.current = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `voice-${Date.now()}`;
+    currentVoiceKeyRef.current = null;
     setDraftInputMethod("voice");
     setView("voice");
     setActiveTab("entry");
@@ -172,7 +176,7 @@ export default function HomePage() {
     setEditing(null);
     setDraft(null);
     setPendingImageDrafts([]);
-    currentImageKeyRef.current = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `image-${Date.now()}`;
+    currentImageKeyRef.current = null;
     setDraftInputMethod("image");
     setView("image");
     setActiveTab("entry");
@@ -193,14 +197,14 @@ export default function HomePage() {
     setActiveTab("entry");
   }
 
-  async function analyzeVoice(audio: File) {
+  async function analyzeVoice(audio: File, isRetry = false) {
     const token = await getIdToken();
     const formData = new FormData();
     formData.set("mode", "voice");
     formData.set("audio", audio);
 
-    // Reuse stable operation key across retries to prevent duplicate Gemini charges
-    if (!currentVoiceKeyRef.current) {
+    // Reuse stable operation key only across retries of the same file
+    if (!isRetry || !currentVoiceKeyRef.current) {
       currentVoiceKeyRef.current = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `voice-${Date.now()}`;
     }
 
@@ -232,14 +236,14 @@ export default function HomePage() {
     setView("confirm");
   }
 
-  async function analyzeImage(image: File) {
+  async function analyzeImage(image: File, isRetry = false) {
     const token = await getIdToken();
     const formData = new FormData();
     formData.set("mode", "image");
     formData.set("image", image);
 
-    // Reuse stable operation key across retries
-    if (!currentImageKeyRef.current) {
+    // Reuse stable operation key only across retries of the same image
+    if (!isRetry || !currentImageKeyRef.current) {
       currentImageKeyRef.current = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `image-${Date.now()}`;
     }
 

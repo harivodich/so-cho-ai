@@ -232,12 +232,15 @@ export function ManualTransactionForm({ initialDraft, products = [], transaction
           <input
             id="manual-item-name-input"
             role="combobox"
+            aria-haspopup="listbox"
             aria-autocomplete="list"
             aria-expanded={showSuggestions && suggestions.length > 0}
             aria-controls="item-name-suggestions"
             aria-activedescendant={
               showSuggestions && highlightedIndex >= 0 ? `suggestion-opt-${highlightedIndex}` : undefined
             }
+            aria-invalid={formError && (type === "sale" || type === "purchase") && !itemName.trim() ? true : undefined}
+            aria-describedby={formError ? "manual-form-error" : undefined}
             value={itemName}
             onChange={(event) => {
               setItemName(event.target.value);
@@ -258,7 +261,7 @@ export function ManualTransactionForm({ initialDraft, products = [], transaction
                 type="button"
                 id={`suggestion-opt-${idx}`}
                 role="option"
-                aria-selected={highlightedIndex === idx || itemName === item.name}
+                aria-selected={highlightedIndex === idx}
                 className={`autocomplete-item ${highlightedIndex === idx ? "focused" : ""}`}
                 key={item.name}
                 onMouseEnter={() => setHighlightedIndex(idx)}
@@ -402,7 +405,7 @@ export function ManualTransactionForm({ initialDraft, products = [], transaction
       </div>
 
       {formError ? (
-        <p className="form-error" role="alert">
+        <p id="manual-form-error" className="form-error" role="alert">
           <UiIcon name="alert" size={18} /> {formError}
         </p>
       ) : null}
